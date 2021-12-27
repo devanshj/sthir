@@ -1,0 +1,7 @@
+{
+  "name": "@sthir/predicate",
+  "version": "0.0.1",
+  "description": "DSL-like abstraction to write typed predicates",
+  "main": "dist/sthir-predicate.cjs.js",
+  "license": "MIT"
+}
