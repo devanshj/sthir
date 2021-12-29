@@ -1,7 +1,27 @@
 {
   "name": "@sthir/predicate",
   "version": "0.0.1",
-  "description": "DSL-like abstraction to write typed predicates",
+  "description": "An eDSL to write typed predicates",
   "main": "dist/sthir-predicate.cjs.js",
-  "license": "MIT"
+  "preconstruct": {
+    "entrypoints": ["index.ts", "macro.ts"]
+  },
+  "author": {
+    "name": "Devansh Jethmalani",
+    "email": "jethmalani.devansh@gmail.com"
+  },
+  "license": "MIT",
+  "readme": "https://github.com/devanshj/sthir/tree/main/packages/predicate/README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devanshj/sthir.git"
+  },
+  "scripts": {
+    "pretest": "node ../../twoslash-tester/generate tests/types.twoslash-test.ts",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  }
 }

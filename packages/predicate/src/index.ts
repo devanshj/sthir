@@ -27,14 +27,21 @@ const operate = (t: Operand, o: Operator): Operand => {
   if (o === "typeof") {
     return (typeof t) as unknown as Operand
   }
-  assertNever(o as never)
+  if (process.env.NODE_ENV === "development") {
+    assertNever(o as never)
+  }
+  return t
 }
 
 const compare = (operand: Operand, comparator: Comparator, comparand: Comparand): boolean => {
   if (comparator === "===") {
     return (operand as unknown) === comparand
   }
-  assertNever(comparator)
+  
+  if (process.env.NODE_ENV === "development") {
+    assertNever(comparator)
+  }
+  return false
 }
 
 
