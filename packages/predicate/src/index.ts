@@ -6,56 +6,74 @@ declare const p:
           ? T & Constraint<Os, Cor, Cnd>
           : never
 
-type P<T, Self> = 
+type P<T, A> = 
   [ ...(
-      Self extends [Operator<T>, string?, unknown?]
-        ? Self extends [infer Self0, string?, unknown?]
-            ? Self extends [Self0, Comparator<Operate<T, [Self0]>>, unknown?]
-                ? Self extends [Self0, infer Self1, unknown?]
-                    ? [Self0 & string, Self1 & string, Comparand<Operate<T, [Self0]>, Self1>]
-                    : never
-                : [Self0 & string, Comparator<Operate<T, [Self0]>>]
+      A extends { 0: Operator<T> }
+        ? A extends [infer Ah, ...infer At]
+            ? | ( A extends { 1: Comparator<Operate<T, Ah>> }
+                    ? A extends { 1: infer Self1 }
+                        ? [Ah & string, Self1 & string, Comparand<Operate<T, Ah>, Self1>]
+                        : never
+                    : [Ah & string, Comparator<Operate<T, Ah>>]
+                )
+              | [Ah & string, ...P<Operate<T, Ah>, At>]
             : never
         : [Operator<T>]
     )
   ]
 
+declare const ps: 
+  <T, A extends Ps<T, A>>
+    (...a: A) =>
+      (t: T) => t is
+        A extends [infer OsCor, infer Cnd]
+          ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
+              ? T & Constraint<Os, Cor, Cnd>
+              : never
+          : never
+
+type Ps<T, A> = 
+  [...(
+    A extends [`${Operator<T>} ${string}`, unknown?]
+      ? A extends [`${infer Oh} ${infer Ot}`, unknown?]
+          ? | ( A extends [`${Oh} ${Comparator<Operate<T, Oh>>}`, unknown?]
+                  ? A extends [`${Oh} ${infer Cor}`, unknown?]
+                      ? [`${Oh} ${Cor}`, Comparand<Operate<T, Oh>, Cor>]
+                      : never
+                  : [`${Oh} ${Comparator<Operate<T, Oh>>}`]
+              )
+            | PsR<Oh, Ps<Operate<T, Oh>, [Ot]>>
+          : never
+      : [`${Operator<T>} `]
+  )]
+
+type PsR<Oh extends string, R extends unknown[]> =
+  R extends unknown
+    ? R["length"] extends 1 ? [`${Oh} ${R[0] & string}`] :
+      R["length"] extends 2 ? [`${Oh} ${R[0] & string}`, R[1]] :
+      never
+    : never
+
 declare const test:
   <T, U extends T>(t: T, p: (t: T) => t is U) => t is U
 
-let y = {} as { a: number } | { b: string } | number
-if (test(y, p(".?a", "===", 5))) {
-  y.a.toFixed()
-} 
+declare let x: { a: { c: number }, x: number } | { b: number } | number
 
-export interface Config {}
-interface DefaultOptions
-  { "onlyPrimitiveEquals": true
-  , "noPrimitiveProperties": true
-  , "onlyNumberComparisons": true 
-  , "onlyStrictEquals": true
-  }
-type Option<K extends keyof DefaultOptions> =
-  A.Get<Config, ["options", K], DefaultOptions[K]>
+if (test(x, ps(".a ?.c typeof ===", "number"))) {
+  x
+}
 
-type Operator<T> = _Operator<T>
-type _Operator<T, T_= T> =
+type Operator<T> =
   | ( A.Path<T> extends infer P
-        ? U.Exclude<`.${S.Replace<L.Join<P, ".">, ".?", "?.">}`, ".">
+        ? U.Exclude<S.Replace<`.${L.Join<P, ".">}`, ".?", "?.">, ".">
         : never
     )
   | "typeof"
 
-type Operate<T, Os> =
-  Os extends [] ? T :
-  Os extends [never] ? T :
-  Os extends [infer Oh] ? _Operate<T, Oh> :
-  Os extends [infer Oh, ...infer Ot] ? Operate<Operate<T, [Oh]>, Ot> :
-  never
-type _Operate<T, O> = 
+type Operate<T, O> = 
   T extends unknown
-    ? O extends `.${string}`
-        ? A.Get<T, S.Split<S.Unshift<S.Replace<O, ".?", ".">>, ".">, undefined> :
+    ? O extends `${"?" | ""}.${string}`
+        ? A.Get<T, S.Split<S.Replace<S.ReplaceLeading<O, "." | "?.", "">, "?.", ".">, ".">, undefined> :
       O extends "typeof"
         ? T extends string ? "string" :
           T extends number ? "number" :
@@ -71,52 +89,37 @@ type _Operate<T, O> =
 
 type Comparator<T> = _Comparator<T>
 type _Comparator<T, T_ = T> =
-  | ( T extends (Option<"onlyPrimitiveEquals"> extends true ? A.Primitive : unknown)
-        ? | "==="
-          | "!=="
-          | ( Option<"onlyStrictEquals"> extends false
-                ? "==" | "!="
-                : never
-            )
-        : never
-    )
-  | ( T extends unknown
-        ? T extends object
-          ? `${T_ extends object ? "" : "?"}${"instanceof" | "has"}`
-          : never
-        : never
-    )
-  | ( T extends unknown
-        ? (Option<"onlyNumberComparisons"> extends true ? number : unknown) extends infer C
-          ? T extends C
-            ? `${T_ extends C ? "" : "?"}${"<" | ">" | "<=" | ">="}`
-            : never
-          : never
-        : never
-    )
+  | "==="
 
 type Comparand<T, C> =
   T extends unknown
     ? C extends "===" ? T :
-      C extends "has" ? keyof T :
-      C extends "instanceof" ? new (...a: never[]) => T :
-      "TODO"
+      C extends "typeof" ? 
+        | "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined"
+        | "object" | "function" :
+      never
     : never
   
 type Constraint<Os, Cor, Cnd> = 
   Cor extends "==="
     ? Os extends [infer Oh, ...infer Ot]
-        ? Oh extends `.${string}`
-            ? A.Pattern<S.Split<S.Unshift<S.Replace<Oh, ".?", ".">>, ".">,
+        ? Oh extends `${"?" | ""}.${string}`
+            ? A.Pattern<S.Split<S.Replace<S.ReplaceLeading<Oh, "." | "?.", "">, "?.", ".">, ".">,
                 Ot extends [] ? Cnd : Constraint<Ot, Cor, Cnd>
               > :
+          Oh extends "typeof"
+            ? Cnd extends "string" ? string :
+              Cnd extends "number" ? number :
+              Cnd extends "bigint" ? bigint :
+              Cnd extends "boolean" ? boolean :
+              Cnd extends "symbol" ? symbol :
+              Cnd extends "undefined" ? undefined :
+              Cnd extends "null" ? object :
+              Cnd extends "object" ? object :
+              never :
           never
         : never
     : never
-
-type ha = Constraint<[".?a"], "===", number>
-
-type haa = A.Pattern<S.Split<S.Unshift<S.Replace<".?a", ".?", ".">>, ".">, "lol">
 
 // ======================================================================
 // Extras
@@ -150,6 +153,12 @@ namespace S {
       ? L.Join<[H, Replace<T, X, W>], ""> :
     S
 
+  export type ReplaceLeading<S, X, W> =
+    S extends X ? W :
+    S extends (X extends unknown ? `${A.Cast<X, A.Templateable>}${infer T}` : never)
+      ? `${A.Cast<W, A.Templateable>}${T}` :
+    S
+
   export type Unshift<S> =
     S extends `${infer H}${infer T}`
       ? T
@@ -168,7 +177,7 @@ namespace A {
   export type Path<T> = _Path<T>
   export type _Path<T, T_ = T> =
     T extends unknown ?
-      T extends (Option<"noPrimitiveProperties"> extends true ? A.Primitive : never) ? [] :
+      T extends A.Primitive ? [] :
       keyof T extends never ? [] :
       | []
       | ( keyof T extends infer K
@@ -176,7 +185,7 @@ namespace A {
                 ? _Path<T_ extends unknown ? A.Get<T_, K> : never> extends infer P
                     ? P extends unknown
                         ? [ K extends keyof T_ ? K :
-                            [T_] extends [object] ? K :
+                            [T_] extends [{}] ? K :
                             `?${A.Cast<K, A.Templateable>}`
                           , ...A.Cast<P, unknown[]>
                           ]
