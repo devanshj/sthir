@@ -1,69 +1,33 @@
-declare const p: 
-  <T, A extends P<T, A>>
+export { P, Ps, Pa }
+
+// ----------
+// P
+
+type P = 
+  <T, A extends PArgs<T, A>>
     (...a: A) =>
       (t: T) => t is
         A extends [...infer Os, infer Cor, infer Cnd]
           ? T & Constraint<Os, Cor, Cnd>
           : never
 
-type P<T, A> = 
+type PArgs<T, A> = 
   [ ...(
-      A extends { 0: Operator<T> }
-        ? A extends [infer Ah, ...infer At]
-            ? | ( A extends { 1: Comparator<Operate<T, Ah>> }
-                    ? A extends { 1: infer Self1 }
-                        ? [Ah & string, Self1 & string, Comparand<Operate<T, Ah>, Self1>]
-                        : never
-                    : [Ah & string, Comparator<Operate<T, Ah>>]
-                )
-              | [Ah & string, ...P<Operate<T, Ah>, At>]
-            : never
-        : [Operator<T>]
-    )
-  ]
-
-declare const ps: 
-  <T, A extends Ps<T, A>>
-    (...a: A) =>
-      (t: T) => t is
-        A extends [infer OsCor, infer Cnd]
-          ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
-              ? T & Constraint<Os, Cor, Cnd>
-              : never
-          : never
-
-type Ps<T, A> = 
-  [...(
-    A extends [`${Operator<T>} ${string}`, unknown?]
-      ? A extends [`${infer Oh} ${infer Ot}`, unknown?]
-          ? | ( A extends [`${Oh} ${Comparator<Operate<T, Oh>>}`, unknown?]
-                  ? A extends [`${Oh} ${infer Cor}`, unknown?]
-                      ? [`${Oh} ${Cor}`, Comparand<Operate<T, Oh>, Cor>]
+    A extends { 0: Operator<T> }
+      ? A extends [infer Ah, ...infer At]
+          ? | ( A extends { 1: Comparator<Operate<T, Ah>> }
+                  ? A extends { 1: infer Self1 }
+                      ? [Ah & string, Self1 & string, Comparand<Operate<T, Ah>, Self1>]
                       : never
-                  : [`${Oh} ${Comparator<Operate<T, Oh>>}`]
+                  : [Ah & string, Comparator<Operate<T, Ah>>]
               )
-            | PsR<Oh, Ps<Operate<T, Oh>, [Ot]>>
+            | [Ah & string, ...PArgs<Operate<T, Ah>, At>]
           : never
-      : [`${Operator<T>} `]
+      : [Operator<T>]
   )]
 
-type PsR<Oh extends string, R extends unknown[]> =
-  R extends unknown
-    ? R["length"] extends 1 ? [`${Oh} ${R[0] & string}`] :
-      R["length"] extends 2 ? [`${Oh} ${R[0] & string}`, R[1]] :
-      never
-    : never
 
-declare const test:
-  <T, U extends T>(t: T, p: (t: T) => t is U) => t is U
-
-declare let x: { a: { c: number }, x: number } | { b: number } | number
-
-if (test(x, ps(".a ?.c typeof ===", "number"))) {
-  x
-}
-
-type Operator<T> =
+  type Operator<T> =
   | ( A.Path<T> extends infer P
         ? U.Exclude<S.Replace<`.${L.Join<P, ".">}`, ".?", "?.">, ".">
         : never
@@ -73,7 +37,7 @@ type Operator<T> =
 type Operate<T, O> = 
   T extends unknown
     ? O extends `${"?" | ""}.${string}`
-        ? A.Get<T, S.Split<S.Replace<S.ReplaceLeading<O, "." | "?.", "">, "?.", ".">, ".">, undefined> :
+        ? A.Get<T, S.Split<S.Replace<S.ReplaceLeading<O, "." | "?.", "">, "?.", ".">, ".">> :
       O extends "typeof"
         ? T extends string ? "string" :
           T extends number ? "number" :
@@ -87,8 +51,7 @@ type Operate<T, O> =
       never
     : never
 
-type Comparator<T> = _Comparator<T>
-type _Comparator<T, T_ = T> =
+type Comparator<T> =
   | "==="
 
 type Comparand<T, C> =
@@ -121,8 +84,61 @@ type Constraint<Os, Cor, Cnd> =
         : never
     : never
 
-// ======================================================================
-// Extras
+
+
+
+
+// ----------
+// Ps
+
+type Ps = 
+  <T, A extends PsArgs<T, A>>
+    (...a: A) =>
+      (t: T) => t is
+        A extends [infer OsCor, infer Cnd]
+          ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
+              ? T & Constraint<Os, Cor, Cnd>
+              : never
+          : never
+
+type PsArgs<T, A> = 
+  [...(
+    A extends [`${Operator<T>} ${string}`, unknown?]
+      ? A extends [`${infer Oh} ${infer Ot}`, unknown?]
+          ? | ( A extends [`${Oh} ${Comparator<Operate<T, Oh>>}`, unknown?]
+                  ? A extends [`${Oh} ${infer Cor}`, unknown?]
+                      ? [`${Oh} ${Cor}`, Comparand<Operate<T, Oh>, Cor>]
+                      : never
+                  : [`${Oh} ${Comparator<Operate<T, Oh>>}`]
+              )
+            | PsArgsR<Oh, PsArgs<Operate<T, Oh>, [Ot]>>
+          : never
+      : [`${Operator<T>} `]
+  )]
+
+type PsArgsR<Oh extends string, R extends unknown[]> =
+  R extends unknown
+    ? R["length"] extends 1 ? [`${Oh} ${R[0] & string}`] :
+      R["length"] extends 2 ? [`${Oh} ${R[0] & string}`, R[1]] :
+      never
+    : never
+
+
+
+
+// ----------
+// Pa
+
+type Pa =
+  <T, U extends T>
+    (t: T, p: (t: T) => t is U) =>
+      t is U
+
+
+
+
+// ----------
+// extras
 
 namespace L {
   export type Join<L, D> =
@@ -158,19 +174,6 @@ namespace S {
     S extends (X extends unknown ? `${A.Cast<X, A.Templateable>}${infer T}` : never)
       ? `${A.Cast<W, A.Templateable>}${T}` :
     S
-
-  export type Unshift<S> =
-    S extends `${infer H}${infer T}`
-      ? T
-      : ""
-
-  export type InferLiteral<S> =
-    S extends string ? S : string
-}
-
-namespace B {
-  export type Not<T> =
-    T extends true ? false : true
 }
 
 namespace A {
@@ -229,11 +232,15 @@ namespace A {
       ? { [_ in A.Cast<Ph, keyof any>]: Pattern<Pt, V> } :
     never
 
-  export type Get<T, P, F = undefined> =
+  export type Get<T, P> =
     B.Not<A.DoesExtend<P, unknown[]>> extends true ? Get<T, [P]> :
     P extends [] ? T :
-    P extends [infer Ph] ? Ph extends keyof T ? T[Ph] : F :
-    P extends [infer Ph, ...infer Pr] ? Get<Get<T, [Ph], never>, Pr, F> :
+    P extends [infer Ph] ?
+      Ph extends keyof T ? T[Ph] :
+      T extends null ? null :
+      T extends undefined ? undefined :
+      undefined :
+    P extends [infer Ph, ...infer Pr] ? Get<Get<T, [Ph]>, Pr> :
     never
 
   export type InferStringLiteralTuple<T> =
@@ -273,7 +280,9 @@ namespace A {
 namespace U {
   export type Exclude<T, U> = 
     T extends U ? never : T
+}
 
-  export type Extract<T, U> = 
-    T extends U ? T : never
+namespace B {
+  export type Not<T> = 
+    T extends true ? false : true
 }
