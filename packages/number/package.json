@@ -1,7 +1,0 @@
-{
-  "name": "@sthir/number",
-  "version": "0.0.1",
-  "description": "Types and functions to work with numbers",
-  "main": "dist/sthir-number.cjs.js",
-  "license": "MIT"
-}
