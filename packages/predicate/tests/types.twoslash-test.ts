@@ -4,7 +4,7 @@ import "./jest-expect-extras"
 const query = () => 
   ((global as any).twoSlashQueries.shift()) as { completions: string[], text: string }
 
-test("types", () => {
+test("index index typeof === value", () => {
   let x = {} as { a: { b: number }, z: string } | { c: string } | string
 
   // @ts-expect-error
@@ -53,5 +53,13 @@ test("types", () => {
 
   if (pa(x, p(".a", "?.b", "typeof", "===", "number"))) {
     let _: string = x.z
+  }
+})
+
+test("typeof typeof ===", () => {
+  let x = { lol: 0 }
+  
+  if (pa(x, p("typeof", "typeof", "===", "string"))) {
+    let _: { lol: number } = x;
   }
 })

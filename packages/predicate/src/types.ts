@@ -11,7 +11,7 @@ type P =
           ? T & Constraint<Os, Cor, Cnd>
           : never
 
-type PArgs<T, A> = 
+type PArgs<T, A> =
   [ ...(
     A extends { 0: Operator<T> }
       ? A extends [infer Ah, ...infer At]
@@ -65,23 +65,27 @@ type Comparand<T, C> =
   
 type Constraint<Os, Cor, Cnd> = 
   Cor extends "==="
-    ? Os extends [infer Oh, ...infer Ot]
+    ? Os extends [] ? Cnd :
+      Os extends [infer Oh, ...infer Ot]
         ? Oh extends `${"?" | ""}.${string}`
-            ? A.Pattern<S.Split<S.Replace<S.ReplaceLeading<Oh, "." | "?.", "">, "?.", ".">, ".">,
-                Ot extends [] ? Cnd : Constraint<Ot, Cor, Cnd>
-              > :
+            ? A.Pattern<
+                  S.Split<S.Replace<S.ReplaceLeading<Oh, "." | "?.", "">, "?.", ".">, ".">,
+                  Ot extends [] ? Cnd : Constraint<Ot, Cor, Cnd>
+                > :
           Oh extends "typeof"
-            ? Cnd extends "string" ? string :
-              Cnd extends "number" ? number :
-              Cnd extends "bigint" ? bigint :
-              Cnd extends "boolean" ? boolean :
-              Cnd extends "symbol" ? symbol :
-              Cnd extends "undefined" ? undefined :
-              Cnd extends "null" ? object :
-              Cnd extends "object" ? object :
-              never :
+            ? Ot extends []
+                ? Cnd extends "string" ? string :
+                  Cnd extends "number" ? number :
+                  Cnd extends "bigint" ? bigint :
+                  Cnd extends "boolean" ? boolean :
+                  Cnd extends "symbol" ? symbol :
+                  Cnd extends "undefined" ? undefined :
+                  Cnd extends "null" ? object :
+                  Cnd extends "object" ? object :
+                  never
+                : unknown
+            : never :
           never
-        : never
     : never
 
 
