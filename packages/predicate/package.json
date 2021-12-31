@@ -4,7 +4,10 @@
   "description": "An eDSL to write typed predicates",
   "main": "dist/sthir-predicate.cjs.js",
   "preconstruct": {
-    "entrypoints": ["index.ts", "macro.ts"]
+    "entrypoints": [
+      "index.ts",
+      "macro.ts"
+    ]
   },
   "author": {
     "name": "Devansh Jethmalani",
@@ -23,5 +26,9 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "@types/babel-plugin-macros": "^2.8.5",
+    "babel-plugin-macros": "^3.1.0"
   }
 }
