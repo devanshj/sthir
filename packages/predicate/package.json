@@ -21,7 +21,9 @@
   },
   "scripts": {
     "pretest": "node ../../twoslash-tester/generate tests/types.twoslash-test.ts",
-    "test": "jest"
+    "test": "jest",
+    "build": "cd ../../ && preconstruct build",
+    "postbuild": "node fix-macro-dts"
   },
   "jest": {
     "preset": "ts-jest",
@@ -31,5 +33,11 @@
     "@types/babel-plugin-macros": "^2.8.5",
     "babel-plugin-macros": "^3.1.0",
     "babel-plugin-tester": "^10.1.0"
+  },
+  "dependencies": {
+    "@babel/core": "^7.16.7",
+    "@babel/parser": "^7.16.7",
+    "@babel/types": "^7.16.7",
+    "babel-plugin-macros": "^3.1.0"
   }
 }
