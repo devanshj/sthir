@@ -8,7 +8,7 @@ type P =
     (...a: A) =>
       (t: T) => t is
         A extends [...infer Os, infer Cor, infer Cnd]
-          ? T & Constraint<Os, Cor, Cnd>
+          ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
           : never
 
 type PArgs<T, A> =
@@ -27,17 +27,14 @@ type PArgs<T, A> =
   )]
 
 
-  type Operator<T> =
-  | ( A.Path<T> extends infer P
-        ? U.Exclude<S.Replace<`.${L.Join<P, ".">}`, ".?", "?.">, ".">
-        : never
-    )
+type Operator<T> =
+  | IndexFromPath<A.Path<T>>
   | "typeof"
 
 type Operate<T, O> = 
   T extends unknown
     ? O extends `${"?" | ""}.${string}`
-        ? A.Get<T, S.Split<S.Replace<S.ReplaceLeading<O, "." | "?.", "">, "?.", ".">, ".">> :
+        ? A.Get<T, PathFromIndex<O>> :
       O extends "typeof"
         ? T extends string ? "string" :
           T extends number ? "number" :
@@ -53,10 +50,12 @@ type Operate<T, O> =
 
 type Comparator<T> =
   | "==="
+  | "!=="
 
 type Comparand<T, C> =
   T extends unknown
     ? C extends "===" ? T :
+      C extends "!==" ? T : 
       C extends "typeof" ? 
         | "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined"
         | "object" | "function" :
@@ -69,9 +68,9 @@ type Constraint<Os, Cor, Cnd> =
       Os extends [infer Oh, ...infer Ot]
         ? Oh extends `${"?" | ""}.${string}`
             ? A.Pattern<
-                  S.Split<S.Replace<S.ReplaceLeading<Oh, "." | "?.", "">, "?.", ".">, ".">,
-                  Ot extends [] ? Cnd : Constraint<Ot, Cor, Cnd>
-                > :
+                PathFromIndex<Oh>,
+                Ot extends [] ? Cnd : Constraint<Ot, Cor, Cnd>
+              > :
           Oh extends "typeof"
             ? Ot extends []
                 ? Cnd extends "string" ? string :
@@ -83,14 +82,12 @@ type Constraint<Os, Cor, Cnd> =
                   Cnd extends "null" ? object :
                   Cnd extends "object" ? object :
                   never
-                : unknown
-            : never :
+                : unknown :
           never
-    : never
-
-
-
-
+        : never :
+  Cor extends "!=="
+    ? A.Not<Constraint<Os, "===", Cnd>> :
+  never
 
 // ----------
 // Ps
@@ -101,7 +98,7 @@ type Ps =
       (t: T) => t is
         A extends [infer OsCor, infer Cnd]
           ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
-              ? T & Constraint<Os, Cor, Cnd>
+              ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
               : never
           : never
 
@@ -143,6 +140,12 @@ type Pa =
 
 // ----------
 // extras
+
+type IndexFromPath<P> =
+  U.Exclude<S.Replace<`.${L.Join<P, ".">}`, ".?", "?.">, ".">
+
+type PathFromIndex<S> = 
+  S.Split<S.Replace<S.ReplaceLeading<S, "." | "?.", "">, "?.", ".">, ".">
 
 namespace L {
   export type Join<L, D> =
@@ -236,10 +239,91 @@ namespace A {
       ? { [_ in A.Cast<Ph, keyof any>]: Pattern<Pt, V> } :
     never
 
+  declare const $$not: unique symbol
+  export type Not<T> = { [$$not]: T }
+
+  export type NotAwareIntersect<A, B> = 
+    B extends Not<infer NotB>
+      ? A extends object
+          ? O.Normalize<U.ToIntersection<
+              NotB extends object
+                ? { [K in keyof A]:
+                      K extends O.Key<NotB>
+                        ? NotAwareIntersect<A[K], A.Not<A.Get<NotB, K>>>
+                        : A[K]
+                  }
+                : A
+            >>
+          : A extends NotB
+              ? never
+              : A
+      : A & B
+
+  A.test(A.areEqual
+    < NotAwareIntersect<"A" | "B" | "C", A.Not<"A" | "B">>
+    , "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < NotAwareIntersect<{ x: "A" } | "B" | "C", A.Not<{ x: "A" } | "B">>
+    , "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < NotAwareIntersect<
+        { x: "A" } | { y: "X" | "Z" } | "B" | "C"
+      , A.Not<{ x: "A" } | { y: "X" } | "B">
+      >
+    , | ({ y: "X" | "Z" } & { y: "Z" })
+      | "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < NotAwareIntersect<{ x: "A" | "Z" } | "B" | "C", A.Not<{ x: "A" } | "B">>
+    , | ({ x: "A" | "Z" } & { x: "Z" })
+      | "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < NotAwareIntersect<
+        | { x: "A"
+          , y: { x: "B" | "Z" }
+          }
+        | { z: "T" | "U" }
+        | "B"
+        | "C"
+      , A.Not<
+          | { x: "A", y: { x: "B" } }
+          | { z: "T" | "U" }
+          | "B"
+        >
+      >
+    , | ( { x: "A"
+          , y: { x: "B" | "Z" }
+          }
+        & { x: never
+          , y: { x: "Z" }
+          }
+        )
+      | "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < NotAwareIntersect<{ x: "A" } | string | number,  A.Not<object | number>>
+    , string
+    >()
+  )
+
   export type Get<T, P> =
     B.Not<A.DoesExtend<P, unknown[]>> extends true ? Get<T, [P]> :
     P extends [] ? T :
     P extends [infer Ph] ?
+      object extends T ? unknown :
       Ph extends keyof T ? T[Ph] :
       T extends null ? null :
       T extends undefined ? undefined :
@@ -284,9 +368,22 @@ namespace A {
 namespace U {
   export type Exclude<T, U> = 
     T extends U ? never : T
+
+  export type ToIntersection<T> =
+    (T extends unknown ? (k: T) => void : never) extends ((k: infer I) => void)
+      ? I
+      : never;
 }
 
 namespace B {
   export type Not<T> = 
     T extends true ? false : true
+}
+
+namespace O {
+  export type Normalize<T> =
+    T[keyof T] extends never ? never : T
+
+  export type Key<T> = 
+    object extends T ? keyof any : keyof T
 }
