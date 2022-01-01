@@ -33,6 +33,20 @@ tester({
 
         (t => t === y)(x);
       ` 
+    },
+    "truthy": {
+      code: `
+        import { p, ps, pa } from "@sthir/predicate/macro";
+
+        pa(x, p());
+        
+        pa(x, ps());
+      `,
+      output: `
+        (t => Boolean(t))(x);
+
+        (t => Boolean(t))(x);
+      `
     }
   },
 })

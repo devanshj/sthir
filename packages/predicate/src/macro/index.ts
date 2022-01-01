@@ -22,7 +22,10 @@ const pMacro = (...as: [] | [...Operator[], Comparator, Comparand]) => {
   if (isEmpty(as)) {
     return bt.arrowFunctionExpression(
       [bt.identifier("t")],
-      bt.identifier("t")
+      bt.callExpression(
+        bt.identifier("Boolean"),
+        [bt.identifier("t")]
+      )
     )
   }
 

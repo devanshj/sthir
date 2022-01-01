@@ -7,15 +7,15 @@ import { P, Pa, Ps } from "./types"
 
 type PImpl = 
   (...a: [] | [...Operator[], Comparator, Comparand]) =>
-    (operand: Operand) => boolean | Operand
+    (operand: Operand) => boolean
 
 type Operand = unknown & { __isOperand: true }
 type Operator = (`${`?` | `.`}${string}` | "typeof") & { __isOperator: true }
 type Comparator = ("===" | "!==") & { __isComparator: true }
 type Comparand = unknown & { __isComparand: true }
 
-const pImpl: PImpl = (...as) => (operand) => {
-  if (isEmpty(as)) return operand;
+const pImpl: PImpl = (...as) => operand => {
+  if (isEmpty(as)) return Boolean(operand)
   let [operators, comparator, comparand] = pop2(as)
   return compare(operators.reduce(operate, operand), comparator, comparand)
 }
@@ -57,7 +57,7 @@ const compare = (operand: Operand, comparator: Comparator, comparand: Comparand)
 
 type PsImpl = 
   (...a: [] | [OperatorsComparator, Comparand]) =>
-    (operand: Operand) => boolean | Operand
+    (operand: Operand) => boolean
 type OperatorsComparator = string & { __isOperatorsComparator: true }
 
 const psImpl: PsImpl = (...a) => {
