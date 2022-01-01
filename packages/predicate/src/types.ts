@@ -119,7 +119,8 @@ type PsArgs<T, A> =
                 )
               | PsArgsR<Oh, PsArgs<Operate<T, Oh>, [Ot]>>
             : never
-        : [`${Operator<T>} `]
+        : | [`${Operator<T>}`]
+          | [`${Operator<T>} `]
     )]
 
 type PsArgsR<Oh extends string, R extends unknown[]> =

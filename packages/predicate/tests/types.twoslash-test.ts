@@ -81,3 +81,15 @@ test("truthy", () => {
     let _: { a: string } | number = x
   }
 })
+
+test("index, truthy", () => {
+  let x = {} as { a?: string }
+
+  if (pa(x, p(".a"))) {
+    let _: { a: string } = x
+  }
+
+  if (pa(x, ps(".a"))) {
+    let _: { a: string } = x
+  }
+})
