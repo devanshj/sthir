@@ -120,7 +120,7 @@ export const pa:
 
 Supported operators
 
-- Index (".a", "?.a", ".a.b", ".a?.b" / etc)
+- Index (`.a`, `?.a`, `.a.b`, `.a?.b`, etc)
 - `typeof` (postfix)
 - (In future) `!` (postfix)
 
