@@ -114,7 +114,7 @@ test("no operators", () => {
   // @ts-expect-error
   ;[1, 2, null].filter(ps("  "))
   //                        ^|
-  expect(query().completions).toSetEqual(["===", "!==", "typeof", "typeof "])
+  expect(query().completions).toSetEqual(["===", "!==", "typeof"])
 
   // @ts-expect-error
   ;[1, 2, null].filter(ps("!=="))

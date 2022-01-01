@@ -125,13 +125,16 @@ type PsArgs<T, Self> =
               | PsArgsR<Oh, PsArgs<Operate<T, Oh>, [Ot]>>
             : never
         :
+      Self extends [`${Operator<T>} `, unknown?]
+        ? Self extends [`${infer Oh} `, unknown?]
+            ? [`${Oh} ${Comparator<Operate<T, Oh>>}`]
+            : [] :
       Self extends [Comparator<T>, unknown?]
         ? Self extends { 0: infer Self0 }
             ? [Self0 & string, Comparand<T, Self0>]
             : never :
       | []
       | [Operator<T>]
-      | [`${Operator<T>} `]
       | [Comparator<T>]
     )]
 
