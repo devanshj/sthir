@@ -1,124 +1,182 @@
-import { NodePath, Node } from "@babel/core"
+import b from "@babel/core"
 import { parseExpression } from "@babel/parser"
-import t, { Expression } from "@babel/types"
+import bt from "@babel/types"
 import { createMacro, MacroError } from "babel-plugin-macros"
 
+export default createMacro(({ references }) => doAndMapStringError(() => {
+  transformPReferences(references.p ?? [])
+  transformPsReferences(references.ps ?? [])
+  transformPaReferences(references.pa ?? [])
+}, e => new MacroError(e)))
 
-type Operator = `${`?` | `.`}${string}` | "typeof"
-type Comparator = "==="
-type Comparand = Expression
 
-const predicate = (...as: [...Operator[], Comparator, Comparand]) => {
+// ----------
+// p
+
+const transformPReferences = (refs: b.NodePath<bt.Node>[]) => {
+  for (let path of refs.map(r => r.parentPath))
+    path?.replaceWith(pMacro(...parsePArguments(path.node)))
+}
+
+const pMacro = (...as: [] | [...Operator[], Comparator, Comparand]) => {
+  if (isEmpty(as)) {
+    return bt.arrowFunctionExpression(
+      [bt.identifier("t")],
+      bt.identifier("t")
+    )
+  }
+
   let [operators, comparator, comparand] = pop2(as);
-
-  return t.arrowFunctionExpression(
-    [t.identifier("t")],
-    t.binaryExpression(
+  return bt.arrowFunctionExpression(
+    [bt.identifier("t")],
+    bt.binaryExpression(
       comparator,
       parseExpression(operators.reduce((t, o) => {
-        if (/^(\.|\?\.)/.test(o)) return `${t}${o}`
-        if (o === "typeof") return `typeof ${t}`
-        return "" as never;
+        if (isIndex(o)) return `${t}${o}`
+        if (isTypeof(o)) return `typeof ${t}`
+        assertNever(o)
       }, "t")),
       comparand
     )
   )
 }
 
-const pMacro = (path: NodePath<Node> | null) => {
-  if (!path || !t.isCallExpression(path.node)) {
-    throw new MacroError("`p` was expected to be called at " + loc(path?.node));
-  }
-  if (path.node.arguments.length < 2) {
-    throw new MacroError("`p` expected 2 or more arguments at " + loc(path.node));
-  }
+type PArguments = [] | [...Operator[], Comparator, Comparand]
+const parsePArguments = (node: bt.Node) => doAndMapStringError(() => {
+  if (!bt.isCallExpression(node)) throw "`p` was expected to be called"
+
+  let as = node.arguments;
+  if (as.length === 0) return [] as PArguments
+  if (as.length === 1) throw "Expected 0 or >=2 arguments"
+  return as.map((a, i, { length: n }) => doAndMapStringError(
+    () =>
+      i === n - 1 ? parseComparand(a) :
+      i === n - 2 ? parseComparator(a) :
+      parseOperator(a),
+    e => `${e}, at argument ${i}`
+  )) as PArguments
+
+}, e => `${e}, at ${loc(node)}`)
+
+type Operator = `${`?` | `.`}${string}` | "typeof" 
+const parseOperator = (n: bt.Node) => {
+  let v = parseStringLiteral(n)
+  if (isIndex(v)) return v as Operator
+  if (isTypeof(v)) return v as Operator
+  throw `Unexpected operator '${v}'`
+}
+const isIndex = (o: string): o is `${`?` | `.`}${string}` =>
+  o.startsWith(".") || o.startsWith("?.")
+const isTypeof = (o: string): o is "typeof" => o === "typeof"
+
+type Comparator = "===" | "!=="
+const parseComparator = (n: bt.Node) => {
+  let v = parseStringLiteral(n)
+  if (v === "===") return v as Comparator
+  if (v === "!==") return v as Comparator
+  throw `Unexpected comparator '${v}'`
+}
+
+const parseStringLiteral = (n: bt.Node) => {
+  if (bt.isStringLiteral(n)) return n.value;
+  throw "Expected a string literal"
+}
+
+type Comparand = bt.Expression
+const parseComparand = (n: bt.Node) => {
+  if (bt.isExpression(n)) return n as Comparand;
+  throw "Expected an expression"
+}
+
+
+
+
+// ----------
+// ps
+
+const transformPsReferences = (refs: b.NodePath<bt.Node>[]) => {
+  for (let path of refs.map(r => r.parentPath))
+    path?.replaceWith(pMacro(...parsePsArguments(path.node)))
+}
+
+const parsePsArguments = (node: bt.Node) => doAndMapStringError(() => {
+  if (!bt.isCallExpression(node)) throw "`ps` was expected to be called"
+
+  let as = node.arguments;
+  if (as.length === 0) return [] as PArguments
+  if (as.length !== 2) throw "Expected 0 or 2 arguments"
+  let [a0, a1] = as as [bt.Node, bt.Node];
+
+  return [
+    ...parseStringLiteral(a0).split(" ")
+    .map((a, i, as) => doAndMapStringError(
+      () =>
+        i === as.length - 1
+          ? parseComparator(bt.stringLiteral(a))
+          : parseOperator(bt.stringLiteral(a)) ,
+      e => `${e}, at column ${as.join(" ").indexOf(a)}, at argument 0`)
+    ),
+    doAndMapStringError(() => parseComparand(a1), e => `${e}, at argument 1`)
+  ] as PArguments
+
+}, e => `${e}, at ${loc(node)}`)
+
+
+
+
+
+// ----------
+// pa
+
+const transformPaReferences = (refs: b.NodePath<bt.Node>[]) => {
+  for (let path of refs.map(r => r.parentPath))
+    path?.replaceWith(paMacro(path.node))
+}
+
+const paMacro = (node: bt.Node) => doAndMapStringError(() => {
+  if (!bt.isCallExpression(node)) throw "`pa` was expected to be called"
   
-  let args = path.node.arguments.map((node, i, nodes) => {
-    if (i < nodes.length - 2) {
-      if (!t.isStringLiteral(node)) {
-        throw new MacroError("A string literal was expected at" + loc(node));
-      }
-      if (!(/^(\.|\?\.)/.test(node.value) || node.value === "typeof")) {
-        throw new MacroError(`Unsupported operator ${node.value} at ${loc(node)}`);
-      }
-      return node.value
-    }
-    if (i < nodes.length - 1) {
-      if (!t.isStringLiteral(node)) {
-        throw new MacroError("A string literal was expected at" + loc(node));
-      }
-      if (node.value !== "===") {
-        throw new MacroError(`Unsupported comparator at ${node.value} at ${loc(node)}`);
-      }
-      return node.value
-    }
-    if (!t.isExpression(node)) {
-      throw new MacroError("`p` expected an expression as the last argument at" + loc(node));
-    }
-    return node;
-  }) as [...Operator[], Comparator, Comparand]
+  let as = node.arguments;
+  if (as.length !== 2) throw "Expected 2 arguments";
 
-  path.replaceWith(predicate(...args));
+  let [a0, a1] = as as [bt.Node, bt.Node]
+  if (!bt.isExpression(a0)) throw "Expected an expression, at argument 1"
+  if (!bt.isExpression(a1)) throw "Expected an expression, at argument 1"
+
+  return bt.callExpression(a1, [a0])
+
+}, e => `${e}, at ${loc(node)}`)
+
+
+
+
+// ----------
+// extras
+
+const doAndMapStringError = <R>(e: () => R, f: (e: string) => unknown) => {
+  try { return e() }
+  catch (e) {
+    if (typeof e !== "string") throw e;
+    throw f(e)
+  }
 }
 
-const psMacro = (path: NodePath<Node> | null) => {
-  if (!path || !t.isCallExpression(path.node)) {
-    throw new MacroError("`ps` was expected to be called at " + loc(path?.node));
-  }
-  if (path.node.arguments.length !== 2) {
-    throw new MacroError("`ps` expected 2 arguments at " + loc(path.node));
-  }
-  if (!t.isStringLiteral(path.node.arguments[0])) {
-    throw new MacroError("`ps` expected a string literal as the first argument at " + loc(path.node));
-  }
-
-  let operatorsComparator = path.node.arguments[0].value.split(" ") as [...Operator[], Comparator]
-  operatorsComparator.forEach((v, i, vs) => {
-    if (i === vs.length - 1 && v !== "===") {
-      throw new MacroError(`Unsupported comparator at ${v} at ${loc(path.node)}`);
-    }
-    if (!(/^(\.|\?\.)/.test(v) || v === "typeof")) {
-      throw new MacroError(`Unsupported operator ${v} at ${loc(path.node)}`);
-    }
-  })
-
-  if (!t.isExpression(path.node.arguments[1])) {
-    throw new MacroError("`ps` expected an expression as the second argument at " + loc(path.node));
-  }
-  let comparand = path.node.arguments[1]
-
-  path.replaceWith(predicate(...operatorsComparator, comparand));
-}
-
-const paMacro = (path: NodePath<Node> | null) => {
-  if (!path || !t.isCallExpression(path.node)) {
-    throw new MacroError("`pa` was expected to be called at " + loc(path?.node));
-  }
-  if (path.node.arguments.length !== 2) {
-    throw new MacroError("`pa` expected 2 arguments at " + loc(path.node));
-  }
-  if (!t.isExpression(path.node.arguments[1])) {
-    throw new MacroError("`pa` expected an expression as second argument at " + loc(path.node));
-  }
-
-  return t.callExpression(
-    path.node.arguments[1]!,
-    [path.node.arguments[0]!]
-  )
-}
-
-export default createMacro(({ references }) => {
-  references.p?.map(r => r.parentPath).forEach(pMacro);
-  references.ps?.map(r => r.parentPath).forEach(psMacro);
-  references.pa?.map(r => r.parentPath).forEach(paMacro);
-})
-
-const loc = (node: Node | undefined) => {
+const loc = (node: b.Node) => {
   if (!node) return "<unknown>:<unknown>"
   let start = node.loc?.start
   if (!start) return "<unknown>:<unknown>"
   return start.line + ":" + start.column;
 }
 
+const isEmpty = <T extends [] | unknown[]>(xs: T): xs is T & [] =>
+  xs.length === 0
+
 const pop2 = <A extends unknown[], B, C>(xs: [...A, B, C]) =>
   [xs.slice(0, -2), xs.slice(-2)[0], xs.slice(-1)[0]] as [A, B, C]
+
+const assertNever: (a?: never) => never = a => {
+  throw new Error(
+    "Invariant: `assertNever` called with " +
+    JSON.stringify(a, null, "  ")
+  );
+}
