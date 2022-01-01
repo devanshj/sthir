@@ -7,24 +7,28 @@ type P =
   <T, A extends PArgs<T, A>>
     (...a: A) =>
       (t: T) => t is
-        A extends [...infer Os, infer Cor, infer Cnd]
-          ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
-          : never
+        ( A extends []
+            ? ["!==", A.Falsy]
+            : A
+        ) extends [...infer Os, infer Cor, infer Cnd]
+            ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
+            : never
 
 type PArgs<T, A> =
-  [ ...(
-    A extends { 0: Operator<T> }
-      ? A extends [infer Ah, ...infer At]
-          ? | ( A extends { 1: Comparator<Operate<T, Ah>> }
-                  ? A extends { 1: infer Self1 }
-                      ? [Ah & string, Self1 & string, Comparand<Operate<T, Ah>, Self1>]
-                      : never
-                  : [Ah & string, Comparator<Operate<T, Ah>>]
-              )
-            | [Ah & string, ...PArgs<Operate<T, Ah>, At>]
-          : never
-      : [Operator<T>]
-  )]
+  | []
+  | [ ...(
+      A extends { 0: Operator<T> }
+        ? A extends [infer Ah, ...infer At]
+            ? | ( A extends { 1: Comparator<Operate<T, Ah>> }
+                    ? A extends { 1: infer Self1 }
+                        ? [Ah & string, Self1 & string, Comparand<Operate<T, Ah>, Self1>]
+                        : never
+                    : [Ah & string, Comparator<Operate<T, Ah>>]
+                )
+              | [Ah & string, ...PArgs<Operate<T, Ah>, At>]
+            : never
+        : [Operator<T>]
+    )]
 
 
 type Operator<T> =
@@ -93,30 +97,35 @@ type Ps =
   <T, A extends PsArgs<T, A>>
     (...a: A) =>
       (t: T) => t is
-        A extends [infer OsCor, infer Cnd]
+        ( A extends []
+            ? ["!==", A.Falsy]
+            : A
+        ) extends [infer OsCor, infer Cnd]
           ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
               ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
               : never
           : never
 
 type PsArgs<T, A> = 
-  [...(
-    A extends [`${Operator<T>} ${string}`, unknown?]
-      ? A extends [`${infer Oh} ${infer Ot}`, unknown?]
-          ? | ( A extends [`${Oh} ${Comparator<Operate<T, Oh>>}`, unknown?]
-                  ? A extends [`${Oh} ${infer Cor}`, unknown?]
-                      ? [`${Oh} ${Cor}`, Comparand<Operate<T, Oh>, Cor>]
-                      : never
-                  : [`${Oh} ${Comparator<Operate<T, Oh>>}`]
-              )
-            | PsArgsR<Oh, PsArgs<Operate<T, Oh>, [Ot]>>
-          : never
-      : [`${Operator<T>} `]
-  )]
+  | []
+  | [...(
+      A extends [`${Operator<T>} ${string}`, unknown?]
+        ? A extends [`${infer Oh} ${infer Ot}`, unknown?]
+            ? | ( A extends [`${Oh} ${Comparator<Operate<T, Oh>>}`, unknown?]
+                    ? A extends [`${Oh} ${infer Cor}`, unknown?]
+                        ? [`${Oh} ${Cor}`, Comparand<Operate<T, Oh>, Cor>]
+                        : never
+                    : [`${Oh} ${Comparator<Operate<T, Oh>>}`]
+                )
+              | PsArgsR<Oh, PsArgs<Operate<T, Oh>, [Ot]>>
+            : never
+        : [`${Operator<T>} `]
+    )]
 
 type PsArgsR<Oh extends string, R extends unknown[]> =
   R extends unknown
-    ? R["length"] extends 1 ? [`${Oh} ${R[0] & string}`] :
+    ? R["length"] extends 0 ? [`${Oh}`] :
+      R["length"] extends 1 ? [`${Oh} ${R[0] & string}`] :
       R["length"] extends 2 ? [`${Oh} ${R[0] & string}`, R[1]] :
       never
     : never
@@ -315,6 +324,9 @@ namespace A {
     , string
     >()
   )
+
+  export type Falsy = 
+    false | undefined | null | 0 | 0n | ""
 
   export type Get<T, P> =
     B.Not<A.DoesExtend<P, unknown[]>> extends true ? Get<T, [P]> :

@@ -1,4 +1,4 @@
-import { p, pa } from "../src"
+import { p, ps, pa } from "../src"
 import "./jest-expect-extras"
 
 const query = () => 
@@ -7,7 +7,6 @@ const query = () =>
 test("index index typeof === value", () => {
   let x = {} as { a: { b: number }, z: string } | { c: string } | string
 
-  // @ts-expect-error
   pa(x, p())
 
   // @ts-expect-error
@@ -15,7 +14,6 @@ test("index index typeof === value", () => {
   //        ^|
   expect(query().completions).toSetEqual([".a", ".a?.b", ".c", ".z", "typeof"])
 
-  // @ts-expect-error
   pa(x, p(".a"))
 
   // @ts-expect-error
@@ -23,7 +21,6 @@ test("index index typeof === value", () => {
   //              ^|
   expect(query().completions).toSetEqual(["===", "?.b", "typeof"])
 
-  // @ts-expect-error
   pa(x, p(".a", "?.b"))
 
 
@@ -32,7 +29,6 @@ test("index index typeof === value", () => {
   //                     ^|
   expect(query().completions).toSetEqual(["===", "typeof"])
 
-  // @ts-expect-error
   pa(x, p(".a", "?.b", "typeof"))
 
   // @ts-expect-error
@@ -71,5 +67,17 @@ test("index typeof !==", () => {
   if (pa(x, p(".a", "typeof", "!==", "undefined"))) {
     // @ts-expect-error https://github.com/microsoft/TypeScript/issues/47283
     let _: string | number = x.a
+  }
+})
+
+test("truthy", () => {
+  let x = {} as { a: string } | number | undefined
+
+  if (pa(x, p())) {
+    let _: { a: string } | number = x
+  }
+
+  if (pa(x, ps())) {
+    let _: { a: string } | number = x
   }
 })
