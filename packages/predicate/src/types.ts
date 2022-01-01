@@ -55,10 +55,7 @@ type Comparator<T> =
 type Comparand<T, C> =
   T extends unknown
     ? C extends "===" ? T :
-      C extends "!==" ? T : 
-      C extends "typeof" ? 
-        | "string" | "number" | "bigint" | "boolean" | "symbol" | "undefined"
-        | "object" | "function" :
+      C extends "!==" ? T :
       never
     : never
   
