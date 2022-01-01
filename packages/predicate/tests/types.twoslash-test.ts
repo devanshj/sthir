@@ -19,7 +19,7 @@ test("index index typeof === value", () => {
   // @ts-expect-error
   pa(x, p(".a", "  "))
   //              ^|
-  expect(query().completions).toSetEqual(["===", "?.b", "typeof"])
+  expect(query().completions).toSetEqual(["===", "!==", "?.b", "typeof"])
 
   pa(x, p(".a", "?.b"))
 
@@ -27,20 +27,20 @@ test("index index typeof === value", () => {
   // @ts-expect-error
   pa(x, p(".a", "?.b", "  "))
   //                     ^|
-  expect(query().completions).toSetEqual(["===", "typeof"])
+  expect(query().completions).toSetEqual(["===", "!==", "typeof"])
 
   pa(x, p(".a", "?.b", "typeof"))
 
   // @ts-expect-error
   pa(x, p(".a", "?.b", "typeof", "  "))
   //                               ^|
-  expect(query().completions).toSetEqual(["===", "typeof"])
+  expect(query().completions).toSetEqual(["===", "!==", "typeof"])
 
   // @ts-expect-error
   pa(x, p(".a", "?.b", "typeof", "==="))
 
   // @ts-expect-error
-  pa(x, p(".a", "?.b", "typeof", "===", "  "))
+  pa(x, p(".a", "?.b", "typeof", "===", "!==", "  "))
   //                                      ^|
   expect(query().completions).toSetEqual(["number", "undefined"])
 
@@ -92,4 +92,32 @@ test("index, truthy", () => {
   if (pa(x, ps(".a"))) {
     let _: { a: string } = x
   }
+})
+
+test("no operators", () => {
+  ;[1, 2, null].filter(p())
+
+  // @ts-expect-error
+  ;[1, 2, null].filter(p("  "))
+  //                      ^|
+  expect(query().completions).toSetEqual(["===", "!==", "typeof"])
+
+  // @ts-expect-error
+  ;[1, 2, null].filter(p("!=="))
+
+  let _: number[] = [1, 2, null].filter(p("!==", null));
+
+
+  
+  ;[1, 2, null].filter(ps());
+
+  // @ts-expect-error
+  ;[1, 2, null].filter(ps("  "))
+  //                        ^|
+  expect(query().completions).toSetEqual(["===", "!==", "typeof", "typeof "])
+
+  // @ts-expect-error
+  ;[1, 2, null].filter(ps("!=="))
+
+  let __: number[] = [1, 2, null].filter(ps("!==", null))
 })

@@ -1,6 +1,6 @@
 {
   "name": "@sthir/predicate",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An eDSL to write typed predicates",
   "main": "dist/sthir-predicate.cjs.js",
   "preconstruct": {
@@ -23,7 +23,8 @@
     "pretest": "node ../../twoslash-tester/generate tests/types.twoslash-test.ts",
     "test": "jest",
     "build": "cd ../../ && preconstruct build",
-    "postbuild": "node fix-macro-dts"
+    "postbuild": "node fix-macro-dts",
+    "publish": "npm publish --access=public"
   },
   "jest": {
     "preset": "ts-jest",

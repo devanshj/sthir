@@ -6,7 +6,7 @@ tester({
   formatResult: undefined,
   pluginName: "@sthir/predicate/macro",
   tests: {
-    "works": {
+    "index, typeof, ===": {
       code: `
         import { p, ps, pa } from "@sthir/predicate/macro";
 
@@ -19,6 +19,20 @@ tester({
 
         (t => typeof t.a?.b === y)(x);
       `
+    },
+    "no operators": {
+      code: `
+        import { p, ps, pa } from "@sthir/predicate/macro";
+
+        pa(x, p("===", y));
+        
+        pa(x, ps("===", y));
+      `,
+      output: `
+        (t => t === y)(x);
+
+        (t => t === y)(x);
+      ` 
     }
   },
 })
