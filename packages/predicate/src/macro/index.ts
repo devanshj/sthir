@@ -1,6 +1,6 @@
 import b from "@babel/core"
 import { parseExpression } from "@babel/parser"
-import bt from "@babel/types"
+import * as bt from "@babel/types"
 import { createMacro, MacroError } from "babel-plugin-macros"
 
 export default createMacro(({ references }) => doAndMapStringError(() => {
