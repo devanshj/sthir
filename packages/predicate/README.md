@@ -69,15 +69,11 @@ You can use the macro version with [`babel-plugin-macros`](https://github.com/ke
 import { p, ps, pa } from "@sthir/predicate/macro";
 
 pa(x, p(".a?.b", "typeof", "===", y));
-
-pa(x, ps(".a?.b typeof ===", y));
 ```
 
-Gets transformed to
+Gets transformed in build-time to
 
 ```ts
-(t => typeof t.a?.b === y)(x);
-
 (t => typeof t.a?.b === y)(x);
 ```
 
@@ -85,36 +81,22 @@ Gets transformed to
 
 ```ts
 // `p` is short for `predicate`
+// (this is a pseudo type)
 export const p:
-  <T, Os, Cor, Cnd>
-    (...a:
-      | []
-      | [...operators: Os[]
-        , comparator: Cor
-        , comparand: Cnd
-        ]
-    ) =>
-      (operand: T) =>
-        operand is Narrow<T, Os, Cor, Cnd>
-
-// `ps` is short for `predicateStringified`
-export const ps:
-  <T, OsCor, Cnd>
-    (...a:
-      | []
-      | [operatorsComparator: OsCor
-        , comparand: Cnd
-        ]
+  < T
+  , OsCor extends Join<[...Operator[], Comparator], " ">
+  , Cnd extends (HasComparator<OsCor> extends true ? [Comparand] : [])
+  >
+    ( operatorsMaybeComparator?: OsCor
+    , ...comparand: Cnd
     ) =>
       (operand: T) =>
         operand is Narrow<T, OsCor, Cnd>
 
-// `pa` is should for `predicateApply`
+// `pa` is short for `predicateApply`
 export const pa:
   <T, U extends T>
-    ( operand: T
-    , predicate: (t: T) => t is U
-    ) =>
+    (operand: T, predicate: (t: T) => t is U) =>
       operand is U
 ```
 
@@ -122,10 +104,24 @@ Supported operators
 
 - Index (`.a`, `?.a`, `.a.b`, `.a?.b`, etc)
 - `typeof` (postfix)
-- (In future) `!` (postfix)
 
 Supported comparators
 
 - `===`
-- `!==` (in [some cases does not work](https://github.com/devanshj/sthir/blob/7435b8076cf43009ec53033e13f87e80a2adc190/packages/predicate/tests/types.twoslash-test.ts#L64-L71) because of [#47283](https://github.com/microsoft/TypeScript/issues/47283))
-- (In future) `&`
+- `!==` (does not work in [some cases](https://github.com/devanshj/sthir/blob/7435b8076cf43009ec53033e13f87e80a2adc190/packages/predicate/tests/types.twoslash-test.ts#L64-L71) because of [#47283](https://github.com/microsoft/TypeScript/issues/47283))
+
+Future
+
+- `&` comparator. For use cases like [this](https://twitter.com/_developit/status/1471212197183651841)
+- Numeric operators (`>`, `<=`, etc). This would actually come after we have `@sthir/number`. One of the major use cases would be doing a `pa(xs, p(".length >=", 1))` would narrow `xs` from `T[]` to `[T, ...T[]]`.
+- Call operator `(...)`.
+  ```ts
+  declare const a:
+    | { isFoo: (x: number) => true, foo: string } 
+    | { isFoo: (x: number) => false, foo: undefined } 
+
+  if (pa(a, p(".isFoo (", 10, ")")) {
+    a.foo.toUpperCase();
+  }
+  ```
+- Maybe more

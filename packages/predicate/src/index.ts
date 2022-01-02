@@ -1,73 +1,44 @@
-export { p, ps, pa }
+export { p, pa }
 
-import { P, Pa, Ps } from "./types"
+import { P, Pa } from "./types"
 
 // ----------
 // p
 
 type PImpl = 
-  (...a: [] | [...Operator[], Comparator, Comparand]) =>
+  (...a: [] | [Operators] | [OperatorsComparator, Comparand]) =>
     (operand: Operand) => boolean
 
 type Operand = unknown & { __isOperand: true }
-type Operator = (`${`?` | `.`}${string}` | "typeof") & { __isOperator: true }
-type Comparator = ("===" | "!==") & { __isComparator: true }
+type Operators = string & { __isOperators: true }
+type OperatorsComparator = string & { __isOperatorsComparator: true }
 type Comparand = unknown & { __isComparand: true }
 
-const pImpl: PImpl = (...as) => operand => {
-  if (isEmpty(as)) return Boolean(operand)
-  let [operators, comparator, comparand] = pop2(as)
-  return compare(operators.reduce(operate, operand), comparator, comparand)
-}
-const p = pImpl as P
+const pImpl: PImpl = (...a) => t => {
+  if (isEmpty(a)) return Boolean(t)
 
-const operate = (t: Operand, o: Operator): Operand => {
-  if (isIndex(o)) {
-    return get(t, o.replace(/^(\.|\?\.)/, "").replace(/\?\./g, ".").split(".")) as Operand
-  }
-  if (o === "typeof") {
-    return (typeof t) as unknown as Operand
-  }
-  if (process.env.NODE_ENV === "development") {
-    assertNever(o)
-  }
-  return t
-}
-const isIndex = (t: Operator): t is `${`?` | `.`}${string}` & { __isOperator: true } =>
-  /^(\.|\?\.)/.test(t)
+  let [_osCor, cnd] = a
+  let osCor = _osCor.split(" ") as
+    (`.${string}` | `?.${string}` | "typeof" | "===" | "!==")[]
 
-const compare = (operand: Operand, comparator: Comparator, comparand: Comparand): boolean => {
-  if (comparator === "===") {
-    return (operand as unknown) === comparand
-  }
-  if (comparator === "!==") {
-    return (operand as unknown) !== comparand
-  }
-  if (process.env.NODE_ENV === "development") {
-    assertNever(comparator)
-  }
-  return false
-}
+  return Boolean(osCor.reduce((v, x) => {
+    if (doesStartWith(x, ".") || doesStartWith(x, "?.")) return get(
+      v,
+      x.replace("?.", ".").replace(/^\./, "").split(".")
+    )
+    
+    if (x === "typeof") return typeof v
+    if (x === "===") return v === (cnd as unknown)
+    if (x === "!==") return v !== (cnd as unknown)
 
-
-
-
-// ----------
-// ps
-
-type PsImpl = 
-  (...a: [] | [OperatorsComparator, Comparand]) =>
-    (operand: Operand) => boolean
-type OperatorsComparator = string & { __isOperatorsComparator: true }
-
-const psImpl: PsImpl = (...a) => {
-  if (isEmpty(a)) return pImpl();
-  let [a0, a1] = a;
-  return pImpl(...(a0.split(" ") as [...Operator[], Comparator]), a1)
+    if (process.env.NODE_ENV === "development") {
+      assertNever(x)
+    }
+    return v
+  }, t as unknown))
 }
   
-const ps = psImpl as Ps;
-
+const p = pImpl as P
 
 
 
@@ -75,7 +46,6 @@ const ps = psImpl as Ps;
 // pa
 
 const pa = ((t, p) => p(t)) as Pa
-
 
 
 
@@ -92,12 +62,14 @@ const get = (t: unknown, ks: string[]): unknown => {
 const isEmpty = <T extends [] | unknown[]>(xs: T): xs is T & [] =>
   xs.length === 0
 
-const pop2 = <A extends unknown[], B, C>(xs: [...A, B, C]) =>
-  [xs.slice(0, -2), xs.slice(-2)[0], xs.slice(-1)[0]] as [A, B, C]
+const doesStartWith =
+  <S extends string, H extends string>
+    (s: S, h: H): s is S & `${H}${string}` =>
+      s.startsWith(h)
 
 const assertNever: (a?: never) => never = a => {
   throw new Error(
     "Invariant: `assertNever` called with " +
     JSON.stringify(a, null, "  ")
-  );
+  )
 }

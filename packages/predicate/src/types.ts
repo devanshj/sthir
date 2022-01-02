@@ -1,4 +1,4 @@
-export { P, Ps, Pa }
+export { P, Pa }
 
 // ----------
 // P
@@ -10,32 +10,34 @@ type P =
         ( A extends []
             ? ["!==", A.Falsy]
             : A
-        ) extends [...infer Os, infer Cor, infer Cnd]
-            ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
-            : never
+        ) extends [infer OsCor, infer Cnd]
+          ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
+              ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
+              : never
+          : never
 
 type PArgs<T, Self> =
-  [ ...(
-    Self extends { 0: Operator<T> }
-      ? Self extends [infer Self0, ...infer SelfR]
-          ? | ( Self extends { 1: Comparator<Operate<T, Self0>> }
-                  ? Self extends { 1: infer Self1 }
-                      ? [Self0 & string, Self1 & string, Comparand<Operate<T, Self0>, Self1>]
-                      : never
-                  : [Self0 & string, Comparator<Operate<T, Self0>>]
-              )
-            | [Self0 & string, ...PArgs<Operate<T, Self0>, SelfR>]
+  [...(
+    Self extends [`${Operator<T>} ${string}`, unknown?]
+      ? Self extends [`${infer O} ${infer R}`, unknown?]
+          ? PArgsR<O, PArgs<Operate<T, O>, [R]>>
           : never :
-    Self extends { 0: Comparator<T> }
-      ? ( Self extends { 0: infer Self0 }
-            ? [Self0 & string, Comparand<T, Self0>]
-            : never
-        ) :
+    Self extends [Comparator<T>, unknown?]
+      ? Self extends [infer C, unknown?]
+          ? [C & string, Comparand<T, C>]
+          : never :
     | []
     | [Operator<T>]
     | [Comparator<T>]
   )]
 
+type PArgsR<O extends string, T extends unknown[]> =
+  T extends unknown
+    ? T["length"] extends 0 ? [`${O}`] :
+      T["length"] extends 1 ? [`${O} ${T[0] & string}`] :
+      T["length"] extends 2 ? [`${O} ${T[0] & string}`, T[1]] :
+      never
+    : never
 
 type Operator<T> =
   | IndexFromPath<A.Path<T>>
@@ -96,57 +98,6 @@ type Constraint<Os, Cor, Cnd> =
     ? A.Not<Constraint<Os, "===", Cnd>> :
   never
 
-// ----------
-// Ps
-
-type Ps = 
-  <T, A extends PsArgs<T, A>>
-    (...a: A) =>
-      (t: T) => t is
-        ( A extends []
-            ? ["!==", A.Falsy]
-            : A
-        ) extends [infer OsCor, infer Cnd]
-          ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
-              ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
-              : never
-          : never
-
-type PsArgs<T, Self> = 
-  | [...(
-      Self extends [`${Operator<T>} ${string}`, unknown?]
-        ? Self extends [`${infer Oh} ${infer Ot}`, unknown?]
-            ? | ( Self extends [`${Oh} ${Comparator<Operate<T, Oh>>}`, unknown?]
-                    ? Self extends [`${Oh} ${infer Cor}`, unknown?]
-                        ? [`${Oh} ${Cor}`, Comparand<Operate<T, Oh>, Cor>]
-                        : never
-                    : [`${Oh} ${Comparator<Operate<T, Oh>>}`]
-                )
-              | PsArgsR<Oh, PsArgs<Operate<T, Oh>, [Ot]>>
-            : never
-        :
-      Self extends [`${Operator<T>} `, unknown?]
-        ? Self extends [`${infer Oh} `, unknown?]
-            ? [`${Oh} ${Comparator<Operate<T, Oh>>}`]
-            : [] :
-      Self extends [Comparator<T>, unknown?]
-        ? Self extends { 0: infer Self0 }
-            ? [Self0 & string, Comparand<T, Self0>]
-            : never :
-      | []
-      | [Operator<T>]
-      | [Comparator<T>]
-    )]
-
-type PsArgsR<Oh extends string, R extends unknown[]> =
-  R extends unknown
-    ? R["length"] extends 0 ? [`${Oh}`] :
-      R["length"] extends 1 ? [`${Oh} ${R[0] & string}`] :
-      R["length"] extends 2 ? [`${Oh} ${R[0] & string}`, R[1]] :
-      never
-    : never
-
-
 
 
 // ----------
@@ -156,7 +107,6 @@ type Pa =
   <T, U extends T>
     (t: T, p: (t: T) => t is U) =>
       t is U
-
 
 
 
