@@ -7,9 +7,9 @@ type P =
   <T, A extends PArgs<T, A>>
     (...a: A) =>
       (t: T) => t is
-        ( A extends []
-            ? ["!==", A.Falsy]
-            : A
+        ( A extends [] ? ["!==", A.Falsy] :
+          A extends [infer Os] ? [`${Os & string} !==`, A.Falsy] :
+          A
         ) extends [infer OsCor, infer Cnd]
           ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
               ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
@@ -61,6 +61,10 @@ type Operate<T, O> =
     : never
 
 type Comparator<T> =
+  | "==="
+  | "!=="
+
+type UnknownComparator =
   | "==="
   | "!=="
 
@@ -217,18 +221,25 @@ namespace A {
   export type NotAwareIntersect<A, B> = 
     B extends Not<infer NotB>
       ? A extends object
-          ? O.Normalize<U.ToIntersection<
-              NotB extends object
-                ? { [K in keyof A]:
-                      K extends O.Key<NotB>
-                        ? NotAwareIntersect<A[K], A.Not<A.Get<NotB, K>>>
-                        : A[K]
-                  }
-                : A
-            >>
+          ? A.Get<U.ToIntersection<
+              NotB extends unknown
+                ? [ object extends NotB ? never :
+                    NotB extends object
+                      ? O.Normalize<
+                          & A
+                          & O.Normalize<{
+                              [K in Extract<keyof NotB, keyof A>]:
+                                NotAwareIntersect<A[K], A.Not<NotB[K]>>
+                            }>
+                        >
+                      : A
+                  ]
+                : never
+            >, 0>
           : A extends NotB
               ? never
               : A
+        
       : A & B
 
   A.test(A.areEqual
@@ -278,7 +289,7 @@ namespace A {
           , y: { x: "B" | "Z" }
           }
         & { x: never
-          , y: { x: "Z" }
+          , y: { x: "B" | "Z" } & { x: "Z" }
           }
         )
       | "C"
@@ -357,6 +368,7 @@ namespace B {
 
 namespace O {
   export type Normalize<T> =
+    {} extends T ? unknown :
     T[keyof T] extends never ? never : T
 
   export type Key<T> = 

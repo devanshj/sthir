@@ -55,7 +55,7 @@ test("index index typeof === value", () => {
   x.z
 
   if (pa(x, p(".a ?.b typeof ===", "number"))) {
-    let _: string = x.z
+    expectAreTypesEqual<typeof x.z, string>().toBe(true)
   }
 })
 
@@ -63,7 +63,7 @@ test("typeof typeof ===", () => {
   let x = { lol: 0 }
   
   if (pa(x, p("typeof typeof ===", "string"))) {
-    let _: { lol: number } = x;
+    expectAreTypesEqual<typeof x, { lol: number }>().toBe(true)
   }
 })
 
@@ -73,7 +73,7 @@ test("index typeof !==", () => {
 
   if (pa(x, p(".a typeof !==", "undefined"))) {
     // @ts-expect-error https://github.com/microsoft/TypeScript/issues/47283
-    let _: string | number = x.a
+    expectAreTypesEqual<typeof x.a, string | number>().toBe(true)
   }
 })
 
@@ -81,7 +81,7 @@ test("truthy", () => {
   let x = {} as { a: string } | number | undefined
 
   if (pa(x, p())) {
-    let _: { a: string } | number = x
+    expectAreTypesEqual<typeof x, { a: string } | number>().toBe(true)
   }
 })
 
@@ -89,7 +89,7 @@ test("index, truthy", () => {
   let x = {} as { a?: string }
 
   if (pa(x, p(".a"))) {
-    let _: { a: string } = x
+    expectAreTypesEqual<typeof x.a, string>().toBe(true)
   }
 })
 
@@ -104,5 +104,17 @@ test("no operators", () => {
   // @ts-expect-error
   ;[1, 2, null].filter(p("!=="))
 
-  let _: number[] = [1, 2, null].filter(p("!==", null));
+  let x = [1, 2, null].filter(p("!==", null));
+
+  expectAreTypesEqual<typeof x, number[]>().toBe(true)
 })
+
+const expectAreTypesEqual =
+  <A, B>() => ({
+    toBe:
+      ( _:
+          (<T>() => T extends B ? 1 : 0) extends (<T>() => T extends A ? 1 : 0)
+            ? true
+            : false
+      ) => {}
+  })
