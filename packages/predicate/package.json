@@ -23,8 +23,7 @@
     "pretest": "node ../../twoslash-tester/generate tests/types.twoslash-test.ts",
     "test": "jest",
     "build": "cd ../../ && preconstruct build",
-    "postbuild": "node fix-macro-dts",
-    "publish": "npm publish --access=public"
+    "postbuild": "node fix-macro-dts"
   },
   "jest": {
     "preset": "ts-jest",
