@@ -100,17 +100,17 @@ export const pa:
       operand is U
 ```
 
-Supported operators
+### Supported operators
 
 - Index (`.a`, `?.a`, `.a.b`, `.a?.b`, etc)
 - `typeof` (postfix)
 
-Supported comparators
+### Supported comparators
 
 - `===`
 - `!==` (does not work in [some cases](https://github.com/devanshj/sthir/blob/7435b8076cf43009ec53033e13f87e80a2adc190/packages/predicate/tests/types.twoslash-test.ts#L64-L71) because of [#47283](https://github.com/microsoft/TypeScript/issues/47283))
 
-Future
+### Future
 
 - `&` comparator. For use cases like [this](https://twitter.com/_developit/status/1471212197183651841)
 - Numeric operators (`>`, `<=`, etc). This would actually come after we have `@sthir/number`. One of the major use cases would be doing a `pa(xs, p(".length >=", 1))` would narrow `xs` from `T[]` to `[T, ...T[]]`.
