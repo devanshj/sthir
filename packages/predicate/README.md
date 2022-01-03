@@ -108,7 +108,7 @@ export const pa:
 ### Supported comparators
 
 - `===`
-- `!==` (does not work in [some cases](https://github.com/devanshj/sthir/blob/7435b8076cf43009ec53033e13f87e80a2adc190/packages/predicate/tests/types.twoslash-test.ts#L64-L71) because of [#47283](https://github.com/microsoft/TypeScript/issues/47283))
+- `!==` (does not work in [some cases](https://github.com/devanshj/sthir/blob/8a195542cf2b204e8d30fa63fb2abcc5571bf800/packages/predicate/tests/types.twoslash-test.ts#L71-L78) because of [#47283](https://github.com/microsoft/TypeScript/issues/47283))
 
 ### Future
 
