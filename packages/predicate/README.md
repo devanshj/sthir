@@ -125,3 +125,13 @@ export const pa:
   }
   ```
 - Maybe more
+
+### Versioning notes
+
+Note that the current version has a zero major, which means there can be breaking changes without a major bump.
+
+> Major version zero (0.y.z) is for initial development. Anything MAY change at any time. The public API SHOULD NOT be considered stable.
+>
+> — [_semver.org_](https://semver.org/#spec-item-4)
+
+You can still use it of course, just be careful before bumping to a newer version.
