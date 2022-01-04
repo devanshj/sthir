@@ -5,7 +5,7 @@
 An eDSL to write typed predicates
 
 ```ts
-import { ps } from "@sthir/predicate"
+import { p } from "@sthir/predicate"
 
 declare let xs:
   (undefined | { a: string | number } | { b: string })[]
@@ -30,12 +30,12 @@ xs
 // With @sthir/predicate ...
 
 xs
-.filter(ps("?.a typeof ===", "string"))
+.filter(p("?.a typeof ===", "string"))
 .map(x => x.a.toUpperCase())
 ```
 
 ```ts
-import { pa, ps } from "@sthir/predicate"
+import { pa, p } from "@sthir/predicate"
 
 declare let foo:
   | { bar: { type: "x" }
@@ -56,7 +56,7 @@ if (foo.bar.type === "x") {
 
 // With @sthir/predicate ...
 
-if (pa(foo, ps(".bar.type ===", "x"))) {
+if (pa(foo, p(".bar.type ===", "x"))) {
   foo.x
 }
 ```
@@ -66,7 +66,7 @@ if (pa(foo, ps(".bar.type ===", "x"))) {
 You can use the macro version with [`babel-plugin-macros`](https://github.com/kentcdodds/babel-plugin-macros)
 
 ```ts
-import { p, ps, pa } from "@sthir/predicate/macro";
+import { p, pa } from "@sthir/predicate/macro";
 
 pa(x, p(".a?.b", "typeof", "===", y));
 ```
