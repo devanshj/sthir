@@ -109,6 +109,43 @@ export const pa:
 
 - `===`
 - `!==`
+- Implicit ie `p(".a")`, same as `!== falsy`
+
+### Pragmatic choices regarding `!==`
+
+Generally speaking (not just for this library), it's good to avoid `!==`, because `!==` introduces a "negative requirement" which is unintuitive. Let me give you an example...
+
+```ts
+const foo = (x: { a?: string } | { b: string }) => {
+  if ("a" in x && x.a !== undefined) {
+    x.a; // string | undefined
+    (x.a as string).toUpperCase();
+  }
+}
+```
+
+Now you might think that the above assertion `as string` is safe, but it's actually not, the following code compiles...
+
+```ts
+let x = { b: "", a: 0 }
+let y: { b: string } = x
+foo(y) // Uncaught TypeError: x.a.toUpperCase is not a function
+```
+
+You see you forgot that `{ b: string, a: number }` is a subtype of `{ b: string }` so just because you can's see `"a"` in `{ b: string }` doesn't mean there is no `"a"` in it, `{ b: string }` is mathematically same as `{ b: string, a: unknown }`. So just because you checked `a` is not `undefined` doesn't mean it'll be `string`.
+
+But a lot of usual js patterns use `!==` checks (which includes truthy checks because that's same as `!== falsy`) so `@sthir/predicate` makes a pragmatic choice and assumes you're not doing something funny. In fact TypeScript also assumes that because narrowing `x.a` to `string | undefined` is also incorrect as it could be `number` too as we saw above.
+
+```ts
+const foo = (x: { a?: string } | { b: string }) => {
+  if (pa(x, p(".a !==", undefined)) {
+    x.a; // string
+    x.a.toUpperCase();
+  }
+}
+```
+
+Usually it's not a big deal, it's okay to use `!==`, semantics are important, `if (x !== undefined)` reads way better than `if (typeof x === 'string')`, just don't unnecessarily use `!==`.
 
 ### Future
 
