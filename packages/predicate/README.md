@@ -30,7 +30,7 @@ xs
 // With @sthir/predicate ...
 
 xs
-.filter(ps("?.a typeof ===", "string"))
+.filter(p("?.a typeof ===", "string"))
 .map(x => x.a.toUpperCase())
 ```
 
@@ -66,7 +66,7 @@ if (pa(foo, p(".bar.type ===", "x"))) {
 You can use the macro version with [`babel-plugin-macros`](https://github.com/kentcdodds/babel-plugin-macros)
 
 ```ts
-import { p, ps, pa } from "@sthir/predicate/macro";
+import { p, pa } from "@sthir/predicate/macro";
 
 pa(x, p(".a?.b", "typeof", "===", y));
 ```
