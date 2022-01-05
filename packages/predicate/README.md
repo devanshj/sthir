@@ -109,7 +109,7 @@ export const pa:
 
 - `===`
 - `!==`
-- Implicit ie `p(".a")`, same as `!== falsy`
+- Implicit/Truthy eg `p(".a")`, same as `!== Falsy`
 
 ### Pragmatic choices regarding `!==`
 
