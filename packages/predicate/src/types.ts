@@ -218,7 +218,7 @@ namespace A {
   declare const $$not: unique symbol
   export type Not<T> = { [$$not]: T }
 
-  export type NotAwareIntersect<A, B> = 
+  export type NotAwareIntersect<A, B, A_ = A> = 
     B extends Not<infer NotB>
       ? A extends object
           ? A.Get<U.ToIntersection<
@@ -228,8 +228,11 @@ namespace A {
                       ? O.Normalize<
                           & A
                           & O.Normalize<{
-                              [K in Extract<keyof NotB, keyof A>]:
-                                NotAwareIntersect<A[K], A.Not<NotB[K]>>
+                              [K in keyof NotB]:
+                                NotAwareIntersect<
+                                  A_ extends unknown ? A.Get<A_, K> : never,
+                                  A.Not<NotB[K]>
+                                >
                             }>
                         >
                       : A
@@ -239,7 +242,6 @@ namespace A {
           : A extends NotB
               ? never
               : A
-        
       : A & B
 
   A.test(A.areEqual
@@ -255,18 +257,25 @@ namespace A {
   )
 
   A.test(A.areEqual
+    < NotAwareIntersect<{ a: string | undefined } | { b: string }, A.Not<{ a: undefined }>>
+    , | ({ a: string | undefined } & { a: string })
+      | ({ b: string } & { a: string })
+    >()
+  )
+
+  A.test(A.areEqual
     < NotAwareIntersect<
         { x: "A" } | { y: "X" | "Z" } | "B" | "C"
       , A.Not<{ x: "A" } | { y: "X" } | "B">
       >
-    , | ({ y: "X" | "Z" } & { y: "Z" })
+    , | ({ y: "X" | "Z" } & { x: undefined } & { y: "Z" | undefined })
       | "C"
     >()
   )
 
   A.test(A.areEqual
     < NotAwareIntersect<{ x: "A" | "Z" } | "B" | "C", A.Not<{ x: "A" } | "B">>
-    , | ({ x: "A" | "Z" } & { x: "Z" })
+    , | ({ x: "A" | "Z" } & { x: "Z" | undefined })
       | "C"
     >()
   )
@@ -280,7 +289,7 @@ namespace A {
         | "B"
         | "C"
       , A.Not<
-          | { x: "A", y: { x: "B" } }
+          | { y: { x: "B" } }
           | { z: "T" | "U" }
           | "B"
         >
@@ -288,9 +297,13 @@ namespace A {
     , | ( { x: "A"
           , y: { x: "B" | "Z" }
           }
-        & { x: never
-          , y: { x: "B" | "Z" } & { x: "Z" }
+        & { y:
+            | ( { x: "B" | "Z" }
+              & { x: "Z" | undefined }
+              )
+            | undefined;
           }
+        & { z: undefined }
         )
       | "C"
     >()
@@ -302,6 +315,12 @@ namespace A {
     >()
   )
 
+  A.test(A.areEqual
+    < NotAwareIntersect<{ a?: string }, A.Not<{ a: A.Falsy }>>
+    , { a?: string } & { a: string }
+    >()
+  )
+
   export type Falsy = 
     false | undefined | null | 0 | 0n | ""
 
@@ -309,7 +328,6 @@ namespace A {
     B.Not<A.DoesExtend<P, unknown[]>> extends true ? Get<T, [P]> :
     P extends [] ? T :
     P extends [infer Ph] ?
-      object extends T ? unknown :
       Ph extends keyof T ? T[Ph] :
       T extends null ? null :
       T extends undefined ? undefined :
@@ -370,7 +388,4 @@ namespace O {
   export type Normalize<T> =
     {} extends T ? unknown :
     T[keyof T] extends never ? never : T
-
-  export type Key<T> = 
-    object extends T ? keyof any : keyof T
 }

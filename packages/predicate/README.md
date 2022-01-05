@@ -5,7 +5,7 @@
 An eDSL to write typed predicates
 
 ```ts
-import { ps } from "@sthir/predicate"
+import { p } from "@sthir/predicate"
 
 declare let xs:
   (undefined | { a: string | number } | { b: string })[]
@@ -35,7 +35,7 @@ xs
 ```
 
 ```ts
-import { pa, ps } from "@sthir/predicate"
+import { pa, p } from "@sthir/predicate"
 
 declare let foo:
   | { bar: { type: "x" }
@@ -56,7 +56,7 @@ if (foo.bar.type === "x") {
 
 // With @sthir/predicate ...
 
-if (pa(foo, ps(".bar.type ===", "x"))) {
+if (pa(foo, p(".bar.type ===", "x"))) {
   foo.x
 }
 ```
@@ -108,7 +108,7 @@ export const pa:
 ### Supported comparators
 
 - `===`
-- `!==` (does not work in [some cases](https://github.com/devanshj/sthir/blob/8a195542cf2b204e8d30fa63fb2abcc5571bf800/packages/predicate/tests/types.twoslash-test.ts#L71-L78) because of [#47283](https://github.com/microsoft/TypeScript/issues/47283))
+- `!==`
 
 ### Future
 

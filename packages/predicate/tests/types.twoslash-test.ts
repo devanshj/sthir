@@ -72,7 +72,6 @@ test("index typeof !==", () => {
   let x = {} as { a: string | number | undefined } | { b: string }
 
   if (pa(x, p(".a typeof !==", "undefined"))) {
-    // @ts-expect-error https://github.com/microsoft/TypeScript/issues/47283
     expectAreTypesEqual<typeof x.a, string | number>().toBe(true)
   }
 })
