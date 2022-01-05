@@ -84,7 +84,7 @@ Gets transformed in build-time to
 // (this is a pseudo type)
 export const p:
   < T
-  , OsCor extends Join<[...Operator[], Comparator], " ">
+  , OsCor extends Join<[...Operator[], Comparator?], " ">
   , Cnd extends (HasComparator<OsCor> extends true ? [Comparand] : [])
   >
     ( operatorsMaybeComparator?: OsCor
