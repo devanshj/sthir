@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/@sthir/predicate?labelColor=000000&color=cb3837)](https://npm.im/@sthir/predicate) [![Babel Macro](https://img.shields.io/badge/babel--macro-%F0%9F%8E%A3-f5da55.svg)](https://github.com/kentcdodds/babel-plugin-macros)
 
-An eDSL to write typed predicates
+An eDSL to write typed predicates. Head over to [this twitter thread](https://twitter.com/devanshj__/status/1477950624343871488) for an introduction.
 
 ```ts
 import { p } from "@sthir/predicate"
