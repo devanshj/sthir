@@ -116,6 +116,14 @@ test("Issue #1", () => {
   }
 })
 
+test("Issue #2", () => {
+  let x = {} as { a: { b: string } | undefined }
+
+  if (pa(x, p(".a?.b"))) {
+    expectAreTypesEqual<typeof x.a.b, string>().toBe(true)
+  }
+})
+
 const expectAreTypesEqual =
   <A, B>() => ({
     toBe:

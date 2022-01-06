@@ -12,7 +12,10 @@ type P =
           A
         ) extends [infer OsCor, infer Cnd]
           ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
-              ? A.NotAwareIntersect<T, Constraint<Os, Cor, Cnd>>
+              ? A.NotAwareIntersect<
+                  T,
+                  Constraint<NormaliseOperations<Os>, Cor, Cnd>
+                >
               : never
           : never
 
@@ -59,6 +62,16 @@ type Operate<T, O> =
           never :
       never
     : never
+
+type NormaliseOperations<Os> =
+  Os extends [] ? [] :
+  Os extends [infer O]
+    ? O extends `${"?" | ""}.${string}`
+        ? [...S.SplitBefore<O, "?.">]
+        : [O] :
+  Os extends [infer Oh, ...infer Ot]
+    ? [...NormaliseOperations<[Oh]>, ...NormaliseOperations<Ot>] : 
+  never
 
 type Comparator<T> =
   | "==="
@@ -145,6 +158,26 @@ namespace S {
     S extends `${infer Sh}${A.Cast<D, A.Templateable>}${infer St}`
       ? [Sh, ...Split<St, D>] :
     [S]
+
+  export type SplitBefore<S, D> = 
+    S extends "" ? [] :
+    S extends `${infer Sh}${A.Cast<D, A.Templateable>}${infer St}`
+      ? S extends `${Sh}${infer Dh}${St}`
+          ? [ ...(Sh extends "" ? [] : [Sh])
+            , ...(
+                Split<St, D> extends infer X
+                  ? X extends [] ? [] :
+                    X extends [infer H, ...infer T]
+                      ? [`${Dh}${A.Cast<H, A.Templateable>}`, ...T]
+                      : never
+                  : never
+              )
+            ]
+          : never :
+    [S]
+
+  A.test(A.areEqual<SplitBefore<"a?.b", "?.">, ["a", "?.b"]>())
+  A.test(A.areEqual<SplitBefore<"?.b", "?.">, ["?.b"]>())
 
   export type Replace<S, X, W> =
     S extends X ? W :
