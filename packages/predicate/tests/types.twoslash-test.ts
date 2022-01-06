@@ -108,6 +108,14 @@ test("no operators", () => {
   expectAreTypesEqual<typeof x, number[]>().toBe(true)
 })
 
+test("Issue #1", () => {
+  let x = {} as { a: string } | undefined
+
+  if (pa(x, p("?.a"))) {
+    expectAreTypesEqual<typeof x.a, string>().toBe(true)
+  }
+})
+
 const expectAreTypesEqual =
   <A, B>() => ({
     toBe:

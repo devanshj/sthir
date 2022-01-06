@@ -117,7 +117,13 @@ type IndexFromPath<P> =
   U.Exclude<S.Replace<`.${L.Join<P, ".">}`, ".?", "?.">, ".">
 
 type PathFromIndex<S> = 
-  S.Split<S.Replace<S.ReplaceLeading<S, "." | "?.", "">, "?.", ".">, ".">
+  S.Split<
+    S.Replace<
+      S.ReplaceLeading<S.ReplaceLeading<S, ".", "">, "?.", "?">,
+      "?.", "."
+    >,
+    "."
+  >
 
 namespace L {
   export type Join<L, D> =
@@ -208,7 +214,9 @@ namespace A {
   export type Pattern<P, V> =
     P extends [] ? V :
     P extends [infer Ph, ...infer Pt]
-      ? { [_ in A.Cast<Ph, keyof any>]: Pattern<Pt, V> } :
+      ? Ph extends `?${infer K}`
+          ? { [_ in K]: Pattern<Pt, V> } | null | undefined
+          : { [_ in A.Cast<Ph, keyof any>]: Pattern<Pt, V> } :
     never
 
   declare const $$not: unique symbol
@@ -324,10 +332,12 @@ namespace A {
     B.Not<A.DoesExtend<P, unknown[]>> extends true ? Get<T, [P]> :
     P extends [] ? T :
     P extends [infer Ph] ?
-      Ph extends keyof T ? T[Ph] :
-      T extends null ? null :
-      T extends undefined ? undefined :
-      undefined :
+      (Ph extends `?${infer X}` ? X : Ph) extends infer K
+        ? K extends keyof T ? T[K] :
+          T extends null ? null :
+          T extends undefined ? undefined :
+          undefined
+        : never :
     P extends [infer Ph, ...infer Pr] ? Get<Get<T, [Ph]>, Pr> :
     never
 
