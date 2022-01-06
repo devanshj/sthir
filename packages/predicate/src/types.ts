@@ -64,10 +64,6 @@ type Comparator<T> =
   | "==="
   | "!=="
 
-type UnknownComparator =
-  | "==="
-  | "!=="
-
 type Comparand<T, C> =
   T extends unknown
     ? C extends "===" ? T :
