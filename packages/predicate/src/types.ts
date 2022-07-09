@@ -5,14 +5,14 @@ export { P, Pa }
 
 type P = 
   <T, A extends PArgs<T, A>>
-    (...a: A) =>
+    (...a: PArgsNarrowed<A>) =>
       (t: T) => t is
         ( A extends [] ? ["!==", A.Falsy] :
           A extends [infer Os] ? [`${Os & string} !==`, A.Falsy] :
           A
         ) extends [infer OsCor, infer Cnd]
           ? S.Split<OsCor, " "> extends [...infer Os, infer Cor]
-              ? A.NotAwareIntersect<
+              ? I.Intersect<
                   T,
                   Constraint<NormaliseOperations<Os>, Cor, Cnd>
                 >
@@ -33,6 +33,11 @@ type PArgs<T, Self> =
     | [Operator<T>]
     | [Comparator<T>]
   )]
+
+type PArgsNarrowed<T> =
+  { [I in keyof T]:
+      [I, T] extends [1, [`${string} &`, number]] ? number : T[I]
+  }
 
 type PArgsR<O extends string, T extends unknown[]> =
   T extends unknown
@@ -76,11 +81,13 @@ type NormaliseOperations<Os> =
 type Comparator<T> =
   | "==="
   | "!=="
+  | (T extends number ? "&" : never)
 
 type Comparand<T, C> =
   T extends unknown
     ? C extends "===" ? T :
       C extends "!==" ? T :
+      C extends "&" ? number :
       never
     : never
   
@@ -108,10 +115,140 @@ type Constraint<Os, Cor, Cnd> =
           never
         : never :
   Cor extends "!=="
-    ? A.Not<Constraint<Os, "===", Cnd>> :
+    ? I.Not<Constraint<Os, "===", Cnd>> :
+  Cor extends "&"
+    ? I.Not<Constraint<Os, "===", I.BitwiseAndZero<A.Cast<Cnd, number>>>> :
   never
 
 
+namespace I {
+  declare const $$not: unique symbol
+  export type Not<T> = { [$$not]: T }
+
+  declare const $$bitwiseAndZero: unique symbol  
+  export type BitwiseAndZero<T extends number> = { [$$bitwiseAndZero]: T }
+
+  export type Intersect<A, B> = 
+    B extends Not<infer B>
+      ? [B] extends [BitwiseAndZero<infer B>]
+          ? IntersectWithNotBitwiseAndZero<A, B>
+          : IntersectWithNot<A, B> :
+    A & B
+
+  type IntersectWithNot<A, NotB, A_ = A> =
+    A extends object
+      ? A.Get<U.ToIntersection<
+          NotB extends unknown
+            ? [ object extends NotB ? never :
+                NotB extends object
+                  ? O.Normalize<
+                      & A
+                      & O.Normalize<{
+                          [K in keyof NotB]:
+                            Intersect<
+                              A_ extends unknown ? A.Get<A_, K> : never,
+                              I.Not<NotB[K]>
+                            >
+                        }>
+                    >
+                  : A
+              ]
+            : never
+        >, 0>
+      : A extends NotB
+          ? never
+          : A
+
+  A.test(A.areEqual
+    < Intersect<"A" | "B" | "C", Not<"A" | "B">>
+    , "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < Intersect<{ x: "A" } | "B" | "C", Not<{ x: "A" } | "B">>
+    , "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < Intersect<{ a: string | undefined } | { b: string }, Not<{ a: undefined }>>
+    , | ({ a: string | undefined } & { a: string })
+      | ({ b: string } & { a: string })
+    >()
+  )
+
+  A.test(A.areEqual
+    < Intersect<
+        { x: "A" } | { y: "X" | "Z" } | "B" | "C"
+      , Not<{ x: "A" } | { y: "X" } | "B">
+      >
+    , | ({ y: "X" | "Z" } & { x: undefined } & { y: "Z" | undefined })
+      | "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < Intersect<{ x: "A" | "Z" } | "B" | "C", Not<{ x: "A" } | "B">>
+    , | ({ x: "A" | "Z" } & { x: "Z" | undefined })
+      | "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < Intersect<
+        | { x: "A"
+          , y: { x: "B" | "Z" }
+          }
+        | { z: "T" | "U" }
+        | "B"
+        | "C"
+      , Not<
+          | { y: { x: "B" } }
+          | { z: "T" | "U" }
+          | "B"
+        >
+      >
+    , | ( { x: "A"
+          , y: { x: "B" | "Z" }
+          }
+        & { y:
+            | ( { x: "B" | "Z" }
+              & { x: "Z" | undefined }
+              )
+            | undefined;
+          }
+        & { z: undefined }
+        )
+      | "C"
+    >()
+  )
+
+  A.test(A.areEqual
+    < Intersect<{ x: "A" } | string | number,  Not<object | number>>
+    , string
+    >()
+  )
+
+  A.test(A.areEqual
+    < Intersect<{ a?: string }, Not<{ a: A.Falsy }>>
+    , { a?: string } & { a: string }
+    >()
+  )
+
+  type IntersectWithNotBitwiseAndZero<A, B extends number> =
+    A extends number
+      ? number extends A
+          ? A
+          : Nb._And<Nb.FromNumber<A>, Nb.FromNumber<B>> extends ["0"]
+              ? never
+              : A
+      : A
+
+  A.test(A.areEqual<Intersect<0b01, Not<BitwiseAndZero<0b10>>>, never>())
+  A.test(A.areEqual<Intersect<0b101, Not<BitwiseAndZero<0b110>>>, 0b101>())
+  A.test(A.areEqual<Intersect<{ a: 0b01 } | "foo", Not<{ a: BitwiseAndZero<0b10> }>>, "foo">())
+}
 
 // ----------
 // Pa
@@ -138,6 +275,157 @@ type PathFromIndex<S> =
     "."
   >
 
+namespace Nd {
+  export type Unknown = ("0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9")[]
+  type Digit = Unknown[number]
+  type EvenDigit = "0" | "2" | "4" | "6" | "8"
+  type OddDigit = U.Exclude<Digit, EvenDigit>
+  
+  // https://en.wikipedia.org/wiki/Division_by_two#Decimal
+  export type DivideByTwoFloor<Dividend extends Unknown, IsFirstCheck = true> =
+    IsFirstCheck extends true
+      ? DivideByTwoFloor<["0", ...Dividend], false> extends infer R
+          ? R extends ["0"] ? R : 
+            R extends ["0", ...infer X] ? X :
+            R
+          : never :
+    Dividend extends [] ? [] : 
+    [ ...(
+        Dividend extends [EvenDigit, "0" | "1", ...Digit[]] ? ["0"] :
+        Dividend extends [EvenDigit, "2" | "3", ...Digit[]] ? ["1"] :
+        Dividend extends [EvenDigit, "4" | "5", ...Digit[]] ? ["2"] :
+        Dividend extends [EvenDigit, "6" | "7", ...Digit[]] ? ["3"] :
+        Dividend extends [EvenDigit, "8" | "9", ...Digit[]] ? ["4"] :
+        Dividend extends [OddDigit, "0" | "1", ...Digit[]] ? ["5"] :
+        Dividend extends [OddDigit, "2" | "3", ...Digit[]] ? ["6"] :
+        Dividend extends [OddDigit, "4" | "5", ...Digit[]] ? ["7"] :
+        Dividend extends [OddDigit, "6" | "7", ...Digit[]] ? ["8"] :
+        Dividend extends [OddDigit, "8" | "9", ...Digit[]] ? ["9"] :
+        []
+      )
+    , ...DivideByTwoFloor<A.Cast<L.Shifted<Dividend>, Unknown>, false>
+    ]
+
+  export type DivideByTwo<Dividend extends Unknown> = 
+    { quotient: DivideByTwoFloor<Dividend>
+    , remainder: Dividend extends [...Digit[], OddDigit] ? ["1"] : ["0"]
+    }
+
+  A.test(A.areEqual<
+    DivideByTwo<["1", "7", "3", "9"]>,
+    { quotient: ["8", "6", "9"], remainder: ["1"] }
+  >())
+
+  export type MultiplyByTwo<T extends Unknown, AddOne extends boolean = false> =
+    T extends [Digit]
+      ? T extends ["0"] ? AddOne extends false ? ["0"] : ["1"] :
+        T extends ["1"] ? AddOne extends false ? ["2"] : ["3"] :
+        T extends ["2"] ? AddOne extends false ? ["4"] : ["5"] :
+        T extends ["3"] ? AddOne extends false ? ["6"] : ["7"] :
+        T extends ["4"] ? AddOne extends false ? ["8"] : ["9"] :
+        T extends ["5"] ? AddOne extends false ? ["1", "0"] : ["1", "1"] :
+        T extends ["6"] ? AddOne extends false ? ["1", "2"] : ["1", "3"] :
+        T extends ["7"] ? AddOne extends false ? ["1", "4"] : ["1", "5"] :
+        T extends ["8"] ? AddOne extends false ? ["1", "6"] : ["1", "7"] :
+        T extends ["9"] ? AddOne extends false ? ["1", "8"] : ["1", "9"] :
+        never
+      : T extends [...infer H extends Digit[], infer T extends Digit]
+          ? MultiplyByTwo<[T], AddOne> extends infer R
+            ? R extends [infer X] ? [...MultiplyByTwo<H>, X] :
+              R extends ["1", infer X] ? [...MultiplyByTwo<H, true>, X] :
+              never
+            : never
+          : never
+
+  export type AddOne<T extends Unknown> =
+    T extends [Digit]
+      ? T extends ["0"] ? ["1"] :
+        T extends ["1"] ? ["2"] :
+        T extends ["2"] ? ["3"] :
+        T extends ["3"] ? ["4"] :
+        T extends ["4"] ? ["5"] :
+        T extends ["5"] ? ["6"] :
+        T extends ["6"] ? ["7"] :
+        T extends ["7"] ? ["8"] :
+        T extends ["8"] ? ["9"] :
+        T extends ["9"] ? ["1", "0"] :
+        never
+      : T extends [...infer H extends Digit[], infer T extends Digit]
+          ? AddOne<[T]> extends infer R
+            ? R extends [infer X] ? [...H, X] :
+              R extends ["1", infer X] ? [...AddOne<H>, X] :
+              never
+            : never
+          : never
+}
+
+
+export namespace Nb {
+  export type Unknown = ("0" | "1")[]
+  type Digit = Unknown[number]
+
+  export type And<A extends Unknown, B extends Unknown> =
+    keyof A & number extends keyof B & number
+      ? _TrimLeadingZeros<AndPadded<PadZerosSameAs<A, B>, B>>
+      : AndPadded<B, A>
+
+  export type _And<A, B> = And<A.Cast<A, Unknown>, A.Cast<B, Unknown>>
+
+  export type AndPadded<A extends Unknown, B extends Unknown> =
+    [...A, ...B] extends ["0", "0"] ? ["0"] :
+    [...A, ...B] extends ["0", "1"] ? ["0"] :
+    [...A, ...B] extends ["1", "0"] ? ["0"] :
+    [...A, ...B] extends ["1", "1"] ? ["1"] :
+    { [I in keyof B]:
+      AndPadded<[A.Cast<B[I], Digit>], [A.Cast<A.Get<A, I>, Digit>]>[0]
+    }
+
+  A.test(A.areEqual<Nb.And<Nb.FromNumber<0b01>, Nb.FromNumber<0b10>>, ["0"]>())
+  A.test(A.areEqual<Nb.And<Nb.FromNumber<0b010>, Nb.FromNumber<0b100>>, ["0"]>())
+  A.test(A.areEqual<Nb.And<Nb.FromNumber<0b101>, Nb.FromNumber<0b110>>, ["1", "0", "0"]>())
+
+  export type FromNumber<T extends number> =
+    A.Cast<FromDecimal<A.Cast<S.Split<`${T}`, "">, Nd.Unknown>>, Nb.Unknown>
+
+  type FromDecimal<T extends Nd.Unknown> =
+    Nd.DivideByTwo<T> extends { quotient: infer Q, remainder: infer R }
+      ? { 0: R
+        , 1: [...FromDecimal<A.Cast<Q, Nd.Unknown>>, ...A.Cast<R, Nd.Unknown>]
+        }[Q extends ["0"] ? 0 : 1]
+      : never
+
+  A.test(A.areEqual<FromNumber<5>, ["1", "0", "1"]>())
+  A.test(A.areEqual<FromNumber<16>, ["1", "0", "0", "0", "0"]>())
+
+  type TrimLeadingZeros<T extends Unknown> = 
+    T extends ["0"] ? T :
+    T extends ["0", ...infer X extends Unknown] ? TrimLeadingZeros<X> : 
+    T
+  
+  type _TrimLeadingZeros<T> =
+    TrimLeadingZeros<A.Cast<T, Unknown>>
+
+  type PadZerosSameAs<A extends Unknown, B extends Unknown> =
+    A["length"] extends B["length"] ? A :
+    PadZerosSameAs<["0", ...A], B>
+    
+
+  type ToDecimal<T extends Unknown, P extends Nd.Unknown = ["0"]> =
+    T extends [] ? P :
+    T extends [infer H extends Digit, ...infer T extends Digit[]]
+      ? H extends "0" ? ToDecimal<T, Nd.MultiplyByTwo<P>> :
+        H extends "1" ? ToDecimal<T, Nd.AddOne<Nd.MultiplyByTwo<P>>> :
+        never
+      : never
+
+  export type ToNumber<T extends Unknown> =
+    L.Join<ToDecimal<T>, ""> extends `${infer X extends number}` ? X : never
+
+  A.test(A.areEqual<ToNumber<["1", "0", "1"]>, 5>())
+  A.test(A.areEqual<ToNumber<["1", "0", "0", "0", "0"]>, 16>())
+}
+
+
 namespace L {
   export type Join<L, D> =
     L extends [] ? "" :
@@ -146,9 +434,14 @@ namespace L {
       ? `${A.Cast<Lh, A.Templateable>}${A.Cast<D, A.Templateable>}${L.Join<Lt, D>}` :
     never
 
-  export type Pop<L> =
+  export type Shifted<L> =
     L extends [] ? [] :
-    L extends [...infer X, unknown] ? X :
+    L extends [unknown, ...infer T] ? T :
+    never
+
+  export type Reverse<L> =
+    L extends [] ? [] :
+    L extends [infer H, ...infer T] ? [...Reverse<T>, H] :
     never
 }
 
@@ -252,112 +545,6 @@ namespace A {
           : { [_ in A.Cast<Ph, keyof any>]: Pattern<Pt, V> } :
     never
 
-  declare const $$not: unique symbol
-  export type Not<T> = { [$$not]: T }
-
-  export type NotAwareIntersect<A, B, A_ = A> = 
-    B extends Not<infer NotB>
-      ? A extends object
-          ? A.Get<U.ToIntersection<
-              NotB extends unknown
-                ? [ object extends NotB ? never :
-                    NotB extends object
-                      ? O.Normalize<
-                          & A
-                          & O.Normalize<{
-                              [K in keyof NotB]:
-                                NotAwareIntersect<
-                                  A_ extends unknown ? A.Get<A_, K> : never,
-                                  A.Not<NotB[K]>
-                                >
-                            }>
-                        >
-                      : A
-                  ]
-                : never
-            >, 0>
-          : A extends NotB
-              ? never
-              : A
-      : A & B
-
-  A.test(A.areEqual
-    < NotAwareIntersect<"A" | "B" | "C", A.Not<"A" | "B">>
-    , "C"
-    >()
-  )
-
-  A.test(A.areEqual
-    < NotAwareIntersect<{ x: "A" } | "B" | "C", A.Not<{ x: "A" } | "B">>
-    , "C"
-    >()
-  )
-
-  A.test(A.areEqual
-    < NotAwareIntersect<{ a: string | undefined } | { b: string }, A.Not<{ a: undefined }>>
-    , | ({ a: string | undefined } & { a: string })
-      | ({ b: string } & { a: string })
-    >()
-  )
-
-  A.test(A.areEqual
-    < NotAwareIntersect<
-        { x: "A" } | { y: "X" | "Z" } | "B" | "C"
-      , A.Not<{ x: "A" } | { y: "X" } | "B">
-      >
-    , | ({ y: "X" | "Z" } & { x: undefined } & { y: "Z" | undefined })
-      | "C"
-    >()
-  )
-
-  A.test(A.areEqual
-    < NotAwareIntersect<{ x: "A" | "Z" } | "B" | "C", A.Not<{ x: "A" } | "B">>
-    , | ({ x: "A" | "Z" } & { x: "Z" | undefined })
-      | "C"
-    >()
-  )
-
-  A.test(A.areEqual
-    < NotAwareIntersect<
-        | { x: "A"
-          , y: { x: "B" | "Z" }
-          }
-        | { z: "T" | "U" }
-        | "B"
-        | "C"
-      , A.Not<
-          | { y: { x: "B" } }
-          | { z: "T" | "U" }
-          | "B"
-        >
-      >
-    , | ( { x: "A"
-          , y: { x: "B" | "Z" }
-          }
-        & { y:
-            | ( { x: "B" | "Z" }
-              & { x: "Z" | undefined }
-              )
-            | undefined;
-          }
-        & { z: undefined }
-        )
-      | "C"
-    >()
-  )
-
-  A.test(A.areEqual
-    < NotAwareIntersect<{ x: "A" } | string | number,  A.Not<object | number>>
-    , string
-    >()
-  )
-
-  A.test(A.areEqual
-    < NotAwareIntersect<{ a?: string }, A.Not<{ a: A.Falsy }>>
-    , { a?: string } & { a: string }
-    >()
-  )
-
   export type Falsy = 
     false | undefined | null | 0 | 0n | ""
 
@@ -389,6 +576,7 @@ namespace A {
     | boolean
     | null
     | undefined
+    | bigint
 
   export type Primitive =
     | string
@@ -396,6 +584,8 @@ namespace A {
     | boolean
     | null
     | undefined
+    | bigint
+    | symbol
 
   export type AreEqual<A, B> =
     (<T>() => T extends B ? 1 : 0) extends (<T>() => T extends A ? 1 : 0)
@@ -413,7 +603,7 @@ namespace U {
     T extends U ? never : T
 
   export type ToIntersection<T> =
-    (T extends unknown ? (k: T) => void : never) extends ((k: infer I) => void)
+    (T extends unknown ? (_: T) => void : never) extends ((_: infer I) => void)
       ? I
       : never;
 }
@@ -426,5 +616,7 @@ namespace B {
 namespace O {
   export type Normalize<T> =
     {} extends T ? unknown :
-    T[keyof T] extends never ? never : T
+    T[keyof T] extends never ? never :
+    T
 }
+ 

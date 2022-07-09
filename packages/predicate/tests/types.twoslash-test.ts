@@ -124,6 +124,17 @@ test("Issue #2", () => {
   }
 })
 
+test("&", () => {
+  let x = {} as
+    | { flags: 0b101, foo: string }
+    | { flags: 0b110, foo: number }
+    | { flags: 0b010, foo: boolean }
+
+  if (pa(x, p(".flags &", 0b100))) {
+    expectAreTypesEqual<typeof x.foo, string | number>().toBe(true)
+  }
+})
+
 const expectAreTypesEqual =
   <A, B>() => ({
     toBe:
