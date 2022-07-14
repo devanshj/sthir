@@ -65,7 +65,7 @@ type PArguments =
   [...Operator[], ...([] | [Comparator, Comparand])]
 
 type Operator = `${`?` | `.`}${string}` | "typeof"
-type Comparator = "===" | "!=="
+type Comparator = "===" | "!==" | "&"
 type Comparand = bt.Expression
 
 const parsePArguments = (node: bt.Node) => doAndMapStringError(() => {
@@ -104,8 +104,8 @@ const isIndex = (o: string): o is `${`?` | `.`}${string}` =>
 const isTypeof = (o: string): o is "typeof" =>
   o === "typeof"
 
-const isComparator = (c: string): c is "===" | "!==" =>
-  c === "===" || c === "!=="
+const isComparator = (c: string): c is "===" | "!==" | "&" =>
+  c === "===" || c === "!==" || c === "&"
 
 const isComparand = (n: bt.Node): n is Comparand =>
   bt.isExpression(n)

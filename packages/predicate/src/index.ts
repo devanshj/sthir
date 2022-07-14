@@ -19,9 +19,9 @@ const pImpl: PImpl = (...a) => t => {
 
   let [_osCor, cnd] = a
   let osCor = _osCor.split(" ") as
-    (`.${string}` | `?.${string}` | "typeof" | "===" | "!==")[]
+    (`.${string}` | `?.${string}` | "typeof" | "===" | "!==" | "&")[]
 
-  return Boolean(osCor.reduce((v, x) => {
+  return osCor.reduce((v, x) => {
     if (doesStartWith(x, ".") || doesStartWith(x, "?.")) return get(
       v,
       x.replace("?.", ".").replace(/^\./, "").split(".")
@@ -30,12 +30,13 @@ const pImpl: PImpl = (...a) => t => {
     if (x === "typeof") return typeof v
     if (x === "===") return v === (cnd as unknown)
     if (x === "!==") return v !== (cnd as unknown)
+    if (x === "&") return (v as number) & (cnd as unknown as number)
 
     if (process.env.NODE_ENV === "development") {
       assertNever(x)
     }
     return v
-  }, t as unknown))
+  }, t as unknown) as boolean
 }
   
 const p = pImpl as P

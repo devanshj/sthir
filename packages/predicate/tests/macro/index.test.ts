@@ -35,6 +35,16 @@ tester({
       output: `
         Boolean(x);
       `
+    },
+    "&": {
+      code: `
+        import { p, pa } from "@sthir/predicate/macro";
+
+        pa(x, p("&", y));
+      `,
+      output: `
+        (t => t & y)(x);
+      `
     }
   },
 })
