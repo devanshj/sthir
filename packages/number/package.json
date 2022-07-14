@@ -1,0 +1,22 @@
+{
+  "name": "@sthir/number",
+  "version": "0.0.1",
+  "description": "Functions and types to work with numbers",
+  "main": "dist/sthir-number.cjs.js",
+  "preconstruct": {
+    "entrypoints": ["index.ts"]
+  },
+  "author": {
+    "name": "Devansh Jethmalani",
+    "email": "jethmalani.devansh@gmail.com"
+  },
+  "license": "MIT",
+  "readme": "https://github.com/devanshj/sthir/tree/main/packages/number/README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devanshj/sthir.git"
+  },
+  "scripts": {
+    "build": "cd ../../ && preconstruct build"
+  }
+}
