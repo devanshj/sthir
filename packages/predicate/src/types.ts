@@ -161,82 +161,74 @@ namespace I {
           ? never
           : A
 
-  A.test(A.areEqual
-    < Intersect<"A" | "B" | "C", Not<"A" | "B">>
-    , "C"
-    >()
-  )
+  type Test0 = A.Test<A.AreEqual<
+    Intersect<"A" | "B" | "C", Not<"A" | "B">>,
+    "C"
+  >>
 
-  A.test(A.areEqual
-    < Intersect<{ x: "A" } | "B" | "C", Not<{ x: "A" } | "B">>
-    , "C"
-    >()
-  )
+  type Test1 = A.Test<A.AreEqual<
+    Intersect<{ x: "A" } | "B" | "C", Not<{ x: "A" } | "B">>,
+    "C"
+  >>
 
-  A.test(A.areEqual
-    < Intersect<{ a: string | undefined } | { b: string }, Not<{ a: undefined }>>
-    , | ({ a: string | undefined } & { a: string })
-      | ({ b: string } & { a: string })
-    >()
-  )
+  type Test2 = A.Test<A.AreEqual<
+    Intersect<{ a: string | undefined } | { b: string }, Not<{ a: undefined }>>,
+    | ({ a: string | undefined } & { a: string })
+    | ({ b: string } & { a: string })
+  >>
 
-  A.test(A.areEqual
-    < Intersect<
-        { x: "A" } | { y: "X" | "Z" } | "B" | "C"
-      , Not<{ x: "A" } | { y: "X" } | "B">
-      >
-    , | ({ y: "X" | "Z" } & { x: undefined } & { y: "Z" | undefined })
+  type Test3 = A.Test<A.AreEqual<
+    Intersect<
+      { x: "A" } | { y: "X" | "Z" } | "B" | "C"
+    , Not<{ x: "A" } | { y: "X" } | "B">
+    >,
+    | ({ y: "X" | "Z" } & { x: undefined } & { y: "Z" | undefined })
+    | "C"
+  >>
+
+  type Test4 = A.Test<A.AreEqual<
+    Intersect<{ x: "A" | "Z" } | "B" | "C", Not<{ x: "A" } | "B">>,
+    | ({ x: "A" | "Z" } & { x: "Z" | undefined })
+    | "C"
+  >>
+
+  type Test5 = A.Test<A.AreEqual<
+    Intersect<
+      | { x: "A"
+        , y: { x: "B" | "Z" }
+        }
+      | { z: "T" | "U" }
+      | "B"
       | "C"
-    >()
-  )
-
-  A.test(A.areEqual
-    < Intersect<{ x: "A" | "Z" } | "B" | "C", Not<{ x: "A" } | "B">>
-    , | ({ x: "A" | "Z" } & { x: "Z" | undefined })
-      | "C"
-    >()
-  )
-
-  A.test(A.areEqual
-    < Intersect<
-        | { x: "A"
-          , y: { x: "B" | "Z" }
-          }
+    , Not<
+        | { y: { x: "B" } }
         | { z: "T" | "U" }
         | "B"
-        | "C"
-      , Not<
-          | { y: { x: "B" } }
-          | { z: "T" | "U" }
-          | "B"
-        >
       >
-    , | ( { x: "A"
-          , y: { x: "B" | "Z" }
-          }
-        & { y:
-            | ( { x: "B" | "Z" }
-              & { x: "Z" | undefined }
-              )
-            | undefined;
-          }
-        & { z: undefined }
-        )
-      | "C"
-    >()
-  )
+    >,
+    | ( { x: "A"
+        , y: { x: "B" | "Z" }
+        }
+      & { y:
+          | ( { x: "B" | "Z" }
+            & { x: "Z" | undefined }
+            )
+          | undefined;
+        }
+      & { z: undefined }
+      )
+    | "C"
+  >>
 
-  A.test(A.areEqual
-    < Intersect<{ x: "A" } | string | number,  Not<object | number>>
-    , string
-    >()
-  )
+  type Test6 = A.Test<A.AreEqual<
+    Intersect<{ x: "A" } | string | number,  Not<object | number>>,
+    string
+  >>
 
-  A.test(A.areEqual
-    < Intersect<{ a?: string }, Not<{ a: A.Falsy }>>
-    , { a?: string } & { a: string }
-    >()
-  )
+  type Test7 = A.Test<A.AreEqual<
+    Intersect<{ a?: string }, Not<{ a: A.Falsy }>>,
+    { a?: string } & { a: string }
+  >>
 
   type IntersectWithNotBitwiseAndZero<A, B extends number> =
     A extends number
@@ -247,9 +239,9 @@ namespace I {
               : A
       : A
 
-  A.test(A.areEqual<Intersect<0b01, Not<BitwiseAndZero<0b10>>>, never>())
-  A.test(A.areEqual<Intersect<0b101, Not<BitwiseAndZero<0b110>>>, 0b101>())
-  A.test(A.areEqual<Intersect<{ a: 0b01 } | "foo", Not<{ a: BitwiseAndZero<0b10> }>>, "foo">())
+  type Test8 = A.Test<A.AreEqual<Intersect<0b01, Not<BitwiseAndZero<0b10>>>, never>>
+  type Test9 = A.Test<A.AreEqual<Intersect<0b101, Not<BitwiseAndZero<0b110>>>, 0b101>>
+  type Test10 = A.Test<A.AreEqual<Intersect<{ a: 0b01 } | "foo", Not<{ a: BitwiseAndZero<0b10> }>>, "foo">>
 }
 
 // ----------
@@ -320,8 +312,8 @@ namespace S {
           : never :
     [S]
 
-  A.test(A.areEqual<SplitBefore<"a?.b", "?.">, ["a", "?.b"]>())
-  A.test(A.areEqual<SplitBefore<"?.b", "?.">, ["?.b"]>())
+  type Test0 = A.Test<A.AreEqual<SplitBefore<"a?.b", "?.">, ["a", "?.b"]>>
+  type Test1 = A.Test<A.AreEqual<SplitBefore<"?.b", "?.">, ["?.b"]>>
 
   export type Replace<S, X, W> =
     S extends X ? W :
@@ -361,32 +353,32 @@ namespace A {
         )
     : never
 
-  A.test(A.areEqual<
+  type Test0 = A.Test<A.AreEqual<
     A.Path<
     | { a: {}, c: { x: {}, y: {} } }
     | { a: {}, c: { x: {}, z: {} } }
-    >
-  , [] | ["a"] | ["c"] | ["c", "x"] | ["c", "y"] | ["c", "z"]
-  >())
+    >,
+    [] | ["a"] | ["c"] | ["c", "x"] | ["c", "y"] | ["c", "z"]
+  >>
 
-  A.test(A.areEqual<
+  type Test1 = A.Test<A.AreEqual<
     A.Path<
     | { a: {}, b: {} }
     | { a: {}, c: { x: {}, y: {} } }
     | { a: {}, c: { x: {}, z: {} } }
-    >
-  , [] | ["a"] | ["b"] | ["c"] | ["c", "?x"] | ["c", "?y"] | ["c", "?z"]
-  >())
+    >,
+    [] | ["a"] | ["b"] | ["c"] | ["c", "?x"] | ["c", "?y"] | ["c", "?z"]
+  >>
 
-  A.test(A.areEqual<
-    A.Path<{ a: {} } | undefined>
-  , [] | ["?a"]
-  >())
+  type Test2 = A.Test<A.AreEqual<
+    A.Path<{ a: {} } | undefined>,
+    [] | ["?a"]
+  >>
 
-  A.test(A.areEqual<
-    A.Path<{ a: {} } | {}>
-  , [] | ["a"]
-  >())
+  type Test3 = A.Test<A.AreEqual<
+    A.Path<{ a: {} } | {}>,
+    [] | ["a"]
+  >>
 
   export type Pattern<P, V> =
     P extends [] ? V :
@@ -443,10 +435,7 @@ namespace A {
       ? true
       : false;
 
-  export const test = (_o: true) => {};
-  export const areEqual =
-    <A, B>(_debug?: (value: A) => void) =>
-      undefined as unknown as A.AreEqual<A, B>
+  export type Test<T extends true> = T
 }
 
 namespace U {

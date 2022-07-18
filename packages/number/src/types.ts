@@ -11,16 +11,16 @@ export type E<T extends string> =
   T extends `${infer X extends number}` ? X :
   `Error: Could not parse ${T}`
 
-A.test(A.areEqual<E<"5">, 5>())
-A.test(A.areEqual<E<"0b10">, 2>())
-A.test(A.areEqual<E<"0b10 & 0b11">, 0b10>())
-A.test(A.areEqual<E<`${0b10} & ${0b11}`>, 0b10>())
-A.test(A.areEqual<E<"0b10 | 0b01">, 0b11>())
-A.test(A.areEqual<E<`${0b10} | ${0b11}`>, 0b11>())
-A.test(A.areEqual<E<"0b101 << 0b10">, 0b10100>())
-A.test(A.areEqual<E<`${0b101} << ${0b10}`>, 0b10100>())
-A.test(A.areEqual<E<"0b10 | 0b101 << 0b10">, 0b10110>())
-A.test(A.areEqual<E<"(0b10 | 0b101) << 0b10">, 0b11100>())
+type Test0 = A.Test<A.AreEqual<E<"5">, 5>>
+type Test1 = A.Test<A.AreEqual<E<"0b10">, 2>>
+type Test2 = A.Test<A.AreEqual<E<"0b10 & 0b11">, 0b10>>
+type Test3 = A.Test<A.AreEqual<E<`${0b10} & ${0b11}`>, 0b10>>
+type Test4 = A.Test<A.AreEqual<E<"0b10 | 0b01">, 0b11>>
+type Test5 = A.Test<A.AreEqual<E<`${0b10} | ${0b11}`>, 0b11>>
+type Test6 = A.Test<A.AreEqual<E<"0b101 << 0b10">, 0b10100>>
+type Test7 = A.Test<A.AreEqual<E<`${0b101} << ${0b10}`>, 0b10100>>
+type Test8 = A.Test<A.AreEqual<E<"0b10 | 0b101 << 0b10">, 0b10110>>
+type Test9 = A.Test<A.AreEqual<E<"(0b10 | 0b101) << 0b10">, 0b11100>>
 
 namespace N {
   export type _And<A, B> =
@@ -69,10 +69,10 @@ namespace Nd {
     , remainder: Dividend extends [...Digit[], OddDigit] ? ["1"] : ["0"]
     }
 
-  A.test(A.areEqual<
+  type Test0 = A.Test<A.AreEqual<
     DivideByTwo<["1", "7", "3", "9"]>,
     { quotient: ["8", "6", "9"], remainder: ["1"] }
-  >())
+  >>
 
   export type MultiplyByTwo<T extends Unknown, AddOne extends boolean = false> =
     T extends [Digit]
@@ -138,9 +138,9 @@ export namespace Nb {
       AndPadded<[A.Cast<B[I], Digit>], [A.Cast<A.Get<A, I>, Digit>]>[0]
     }
 
-  A.test(A.areEqual<Nb.And<Nb.FromNumber<0b01>, Nb.FromNumber<0b10>>, ["0"]>())
-  A.test(A.areEqual<Nb.And<Nb.FromNumber<0b010>, Nb.FromNumber<0b100>>, ["0"]>())
-  A.test(A.areEqual<Nb.And<Nb.FromNumber<0b101>, Nb.FromNumber<0b110>>, ["1", "0", "0"]>())
+  type Test0 = A.Test<A.AreEqual<Nb.And<Nb.FromNumber<0b01>, Nb.FromNumber<0b10>>, ["0"]>>
+  type Test1 = A.Test<A.AreEqual<Nb.And<Nb.FromNumber<0b010>, Nb.FromNumber<0b100>>, ["0"]>>
+  type Test2 = A.Test<A.AreEqual<Nb.And<Nb.FromNumber<0b101>, Nb.FromNumber<0b110>>, ["1", "0", "0"]>>
 
   
   export type Or<A extends Unknown, B extends Unknown> =
@@ -160,7 +160,7 @@ export namespace Nb {
       OrPadded<[A.Cast<B[I], Digit>], [A.Cast<A.Get<A, I>, Digit>]>[0]
     }
 
-  A.test(A.areEqual<Nb.Or<Nb.FromNumber<0b10>, Nb.FromNumber<0b01>>, ["1", "1"]>())
+  type Test3 = A.Test<A.AreEqual<Nb.Or<Nb.FromNumber<0b10>, Nb.FromNumber<0b01>>, ["1", "1"]>>
 
 
   export type LeftShift<A extends Unknown, B extends Unknown> =
@@ -196,10 +196,10 @@ export namespace Nb {
     { [I in keyof A]: A[I] extends "0" ? "1" : "0"
     }
 
-  A.test(A.areEqual<Decrement<["1"]>, ["0"]>())
-  A.test(A.areEqual<Decrement<["1", "0", "0", "1", "0"]>, ["1", "0", "0", "0", "1"]>())
-  A.test(A.areEqual<Decrement<["0"]>, ["0"]>())
-  A.test(A.areEqual<Decrement<[]>, []>())
+  type Test4 = A.Test<A.AreEqual<Decrement<["1"]>, ["0"]>>
+  type Test5 = A.Test<A.AreEqual<Decrement<["1", "0", "0", "1", "0"]>, ["1", "0", "0", "0", "1"]>>
+  type Test6 = A.Test<A.AreEqual<Decrement<["0"]>, ["0"]>>
+  type Test7 = A.Test<A.AreEqual<Decrement<[]>, []>>
 
 
   export type FromNumber<T extends number> =
@@ -215,8 +215,8 @@ export namespace Nb {
         }[Q extends ["0"] ? 0 : 1]
       : never
 
-  A.test(A.areEqual<FromNumber<5>, ["1", "0", "1"]>())
-  A.test(A.areEqual<FromNumber<16>, ["1", "0", "0", "0", "0"]>())
+  type Test8 = A.Test<A.AreEqual<FromNumber<5>, ["1", "0", "1"]>>
+  type Test9 = A.Test<A.AreEqual<FromNumber<16>, ["1", "0", "0", "0", "0"]>>
 
   
   type TrimLeadingZeros<T extends Unknown> = 
@@ -247,9 +247,9 @@ export namespace Nb {
   export type _ToNumber<T> =
     ToNumber<A.Cast<T, Unknown>>
 
-  A.test(A.areEqual<ToNumber<["1", "0", "1"]>, 5>())
-  A.test(A.areEqual<ToNumber<["1", "0", "0", "0", "0"]>, 16>())
-  A.test(A.areEqual<ToNumber<["1", "1"]>, 3>())
+  type Test10 = A.Test<A.AreEqual<ToNumber<["1", "0", "1"]>, 5>>
+  type Test11 = A.Test<A.AreEqual<ToNumber<["1", "0", "0", "0", "0"]>, 16>>
+  type Test12 = A.Test<A.AreEqual<ToNumber<["1", "1"]>, 3>>
 }
 
 
@@ -312,7 +312,7 @@ namespace A {
       ? true
       : false;
 
-  export const test = (_o: true) => {};
+  export type Test<T extends true> = T
   export const areEqual =
     <A, B>(_debug?: (value: A) => void) =>
       undefined as unknown as A.AreEqual<A, B>
