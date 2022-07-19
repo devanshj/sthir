@@ -4,7 +4,10 @@
   "description": "Functions and types to work with numbers",
   "main": "dist/sthir-number.cjs.js",
   "preconstruct": {
-    "entrypoints": ["index.ts"]
+    "entrypoints": [
+      "index.ts",
+      "macro/index.ts"
+    ]
   },
   "author": {
     "name": "Devansh Jethmalani",
@@ -17,6 +20,22 @@
     "url": "git+https://github.com/devanshj/sthir.git"
   },
   "scripts": {
-    "build": "cd ../../ && preconstruct build"
+    "build": "cd ../../ && preconstruct build",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "@types/babel-plugin-macros": "^2.8.5",
+    "babel-plugin-macros": "^3.1.0",
+    "babel-plugin-tester": "^10.1.0"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.18.8",
+    "@babel/traverse": "^7.18.8",
+    "@babel/types": "^7.18.8",
+    "babel-plugin-macros": "^3.1.0"
   }
 }
