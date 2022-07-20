@@ -46,6 +46,7 @@ type Test6 = A.Test<A.AreEqual<E<"0b101 << 0b10">, 0b10100>>
 type Test7 = A.Test<A.AreEqual<E<`${0b101} << ${0b10}`>, 0b10100>>
 type Test8 = A.Test<A.AreEqual<E<"0b10 | 0b101 << 0b10">, 0b10110>>
 type Test9 = A.Test<A.AreEqual<E<"(0b10 | 0b101) << 0b10">, 0b11100>>
+type Test10 = A.Test<A.AreEqual<E<`${0b100} | ${0b001 | 0b010}`>, 0b101 | 0b110>>
 
 namespace N {
   export type _And<A, B> =
