@@ -1,15 +1,40 @@
 
 export type ERuntime =
-  <T extends string>(e: T) => E<T>
+  < T extends [e: R extends `Error: ${string}` ? R : T[0]]
+  , R = E<T[0] & string>
+  >
+    (...e: T extends [string] ? T : [e: string]) =>
+      R extends `Error: ${string}`
+        ? number
+        : R
 
 export type E<T extends string> =
-  T extends `${infer X}(${infer Y})${infer Z}` ? E<`${X}${E<Y>}${Z}`> :
-  T extends `${infer X} & ${infer Y}` ? N._And<E<X>, E<Y>> :
-  T extends `${infer X} | ${infer Y}` ? N._Or<E<X>, E<Y>> :
-  T extends `${infer X} << ${infer Y}` ? N._LeftShift<E<X>, E<Y>> :
+  string extends T ? number :
+  T extends `${infer X}(${infer Y})${infer Z}`
+    ? E<Y> extends infer Ey
+        ? Ey extends `Error: ${string}` ? Ey : E<`${X}${Ey & number}${Z}`>
+        : never :
+  T extends `${infer X} & ${infer Y}`
+    ? [E<X>, E<Y>] extends [infer Ex, infer Ey]
+        ? Ex extends `Error: ${string}` ? Ex :
+          Ey extends `Error: ${string}` ? Ey :
+          N._And<Ex, Ey> 
+        : never :
+  T extends `${infer X} | ${infer Y}`
+    ? [E<X>, E<Y>] extends [infer Ex, infer Ey]
+        ? Ex extends `Error: ${string}` ? Ex :
+          Ey extends `Error: ${string}` ? Ey :
+          N._Or<Ex, Ey> 
+      : never :
+  T extends `${infer X} << ${infer Y}`
+    ? [E<X>, E<Y>] extends [infer Ex, infer Ey]
+        ? Ex extends `Error: ${string}` ? Ex :
+          Ey extends `Error: ${string}` ? Ey :
+          N._LeftShift<Ex, Ey> 
+      : never :
   T extends `0b${infer X}` ? Nb.ToNumber<A.Cast<S.Split<X, "">, Nb.Unknown>> :
   T extends `${infer X extends number}` ? X :
-  `Error: Could not parse ${T}`
+  `Error: Cannot parse expression '${T}'`
 
 type Test0 = A.Test<A.AreEqual<E<"5">, 5>>
 type Test1 = A.Test<A.AreEqual<E<"0b10">, 2>>
