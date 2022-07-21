@@ -110,6 +110,7 @@ export const pa:
 - `===`
 - `!==`
 - Implicit/Truthy eg `p(".a")`, same as `!== Falsy`
+- `&`
 
 ### Pragmatic choices regarding `!==`
 
@@ -149,8 +150,7 @@ Usually it's not a big deal, it's okay to use `!==`, semantics are important, `i
 
 ### Future
 
-- `&` comparator. For use cases like [this](https://twitter.com/_developit/status/1471212197183651841)
-- Numeric operators (`>`, `<=`, etc). This would actually come after we have `@sthir/number`. One of the major use cases would be doing a `pa(xs, p(".length >=", 1))` would narrow `xs` from `T[]` to `[T, ...T[]]`.
+- Numeric operators (`>`, `<=`, etc). One of the major use cases would be doing a `pa(xs, p(".length >=", 1))` would narrow `xs` from `T[]` to `[T, ...T[]]`.
 - Call operator `(...)`.
   ```ts
   declare const a:
