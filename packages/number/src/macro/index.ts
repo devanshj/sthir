@@ -1,7 +1,7 @@
 import type { types as bt, NodePath as btNodePath } from "@babel/core"
 import { createMacro, MacroError } from "babel-plugin-macros"
 
-export default createMacro(({ references, babel: { types: bt, parse, traverse } }) => () => {
+export default createMacro(({ references, babel: { types: bt, parse, traverse } }) => {
   const main = () => doAndMapStringError(() => {
     transformEReferences(references.e ?? [])
   }, e => new MacroError(e))
