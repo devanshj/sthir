@@ -23,7 +23,9 @@ describe("e", () => {
   })
 
   it("doesn't compile for invalid expressions", () => {
-    // @ts-expect-error
-    e("0b01 | lol")
+    expect(() => {
+      // @ts-expect-error
+      e("0b01 | lol")
+    }).toThrowError(ReferenceError)
   })
 })
