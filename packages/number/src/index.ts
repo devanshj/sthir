@@ -1,4 +1,4 @@
-import { E, ERuntime } from "./types"
+import type { E, ERuntime } from "./types"
 
 export { E }
 
