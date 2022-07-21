@@ -110,7 +110,7 @@ export const pa:
 - `===`
 - `!==`
 - Implicit/Truthy eg `p(".a")`, same as `!== Falsy`
-- `&`
+- `&` (requires typescript version 4.8 and higher)
 
 ### Pragmatic choices regarding `!==`
 

@@ -4,6 +4,8 @@
 
 Function and types to work with numbers. Currently only includes `e` and `E` to facilitate `@sthir/predicate`'s `&` comparator usage, but will include more functions and types in future.
 
+☝🏻 Note: It requires typescript version 4.8 and higher
+
 ## `e`
 
 An eDSL to write numeric-expressions that evaluate compile-time to produce more complete and narrow types.
