@@ -30,14 +30,12 @@
     "testEnvironment": "node"
   },
   "devDependencies": {
+    "@babel/core": "^7.18.9",
     "@types/babel-plugin-macros": "^2.8.5",
     "babel-plugin-macros": "^3.1.0",
     "babel-plugin-tester": "^10.1.0"
   },
   "dependencies": {
-    "@babel/core": "^7.16.7",
-    "@babel/parser": "^7.16.7",
-    "@babel/types": "^7.16.7",
     "babel-plugin-macros": "^3.1.0"
   }
 }
