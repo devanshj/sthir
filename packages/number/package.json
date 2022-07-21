@@ -21,6 +21,7 @@
   },
   "scripts": {
     "build": "cd ../../ && preconstruct build",
+    "postbuild": "node fix-macro-dts",
     "test": "jest"
   },
   "jest": {
