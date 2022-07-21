@@ -25,6 +25,6 @@ const _e = (x: string): number => {
     return []
   })[0]
 
-  if (!r) throw new Error(`Could not parse ${x}`)
+  if (!r) throw new Error(`Cannot parse expression '${x}'`)
   return r
 }
