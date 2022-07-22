@@ -191,6 +191,12 @@ test("Issue #8: index recursive", () => {
   pa(x, p(".foo .foo"))
 })
 
+test("Issue #6: Huge predicant", () => {
+  pa({} as Element, p())
+
+  pa({} as Element, p(".parentElement"))
+})
+
 const expectAreTypesEqual =
   <A, B>() => ({
     toBe:

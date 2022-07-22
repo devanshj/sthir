@@ -50,7 +50,11 @@ type PArgsR<O extends string, T extends unknown[]> =
     : never
 
 type Operator<T> =
-  | IndexFromPath<A.Path<T>>
+  | IndexFromPath<
+      U.HasConstituentsMoreThan<T extends unknown ? keyof T : never, 10> extends true
+        ? A.PathShallow<T>
+        : A.Path<T>
+    >
   | "typeof"
 
 type Operate<T, O> = 
@@ -352,6 +356,23 @@ namespace A {
         )
     : never
 
+  export type PathShallow<T, Visited = never, T_ = T> =
+    T extends unknown ?
+      T extends Visited ? [] :
+      T extends A.Primitive ? [] :
+      keyof T extends never ? [] :
+      | []
+      | ( keyof T extends infer K
+            ? K extends unknown
+                ? [ K extends keyof T_ ? K :
+                    [T_] extends [{}] ? K :
+                    `?${A.Cast<K, A.Templateable>}`
+                  ]
+                : never
+            : never
+        )
+    : never
+
   type Test0 = A.Test<A.AreEqual<
     A.Path<
     | { a: {}, c: { x: {}, y: {} } }
@@ -452,6 +473,30 @@ namespace U {
     (T extends unknown ? (_: T) => void : never) extends ((_: infer I) => void)
       ? I
       : never;
+
+  export type Head<U> =
+    ToIntersection<U extends unknown ? (x: U) => void : never> extends (_: infer H) => void
+      ? H
+      : never
+
+  export type Shifted<U> =
+    Exclude<U, Head<U>>
+
+  export type IsUnit<U> =
+    [Shifted<U>] extends [never] ? true : false
+
+  export type HasConstituentsMoreThan<U, L extends number> =
+    [U] extends [never] ? false :
+    L extends 0 ? true :
+    HasConstituentsMoreThan<Shifted<U>, NDecrement<L>>
+
+  type Test0 = A.Test<A.AreEqual<
+    HasConstituentsMoreThan<"a" | "b" | "c", 2>,
+    true
+  >>
+
+  type NDecrement<N extends number> =
+    [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14][N]
 }
 
 namespace B {
