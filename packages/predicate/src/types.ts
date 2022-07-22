@@ -330,14 +330,15 @@ namespace S {
 
 namespace A {
   export type Path<T> = _Path<T>
-  export type _Path<T, T_ = T> =
+  export type _Path<T, Visited = never, T_ = T> =
     T extends unknown ?
+      T extends Visited ? [] :
       T extends A.Primitive ? [] :
       keyof T extends never ? [] :
       | []
       | ( keyof T extends infer K
             ? K extends unknown
-                ? _Path<T_ extends unknown ? A.Get<T_, K> : never> extends infer P
+                ? _Path<T_ extends unknown ? A.Get<T_, K> : never, Visited | T> extends infer P
                     ? P extends unknown
                         ? [ K extends keyof T_ ? K :
                             [T_] extends [{}] ? K :
@@ -377,6 +378,13 @@ namespace A {
     A.Path<{ a: {} } | {}>,
     [] | ["a"]
   >>
+
+  interface Foo { foo: Foo }
+  type Test4 = A.Test<A.AreEqual<
+    A.Path<Foo>,
+    [] | ["foo"]
+  >>
+
 
   export type Pattern<P, V> =
     P extends [] ? V :

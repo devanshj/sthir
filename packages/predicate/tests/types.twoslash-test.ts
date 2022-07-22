@@ -180,6 +180,17 @@ test("& for Jason's tweet 1471212197183651841", () => {
   }
 })
 
+test("Issue #8: index recursive", () => {
+  interface Foo { foo: Foo }
+  let x = {} as Foo
+
+  pa(x, p())
+
+  pa(x, p(".foo"))
+
+  pa(x, p(".foo .foo"))
+})
+
 const expectAreTypesEqual =
   <A, B>() => ({
     toBe:
