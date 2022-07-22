@@ -47,6 +47,7 @@ type Test7 = A.Test<A.AreEqual<E<`${0b101} << ${0b10}`>, 0b10100>>
 type Test8 = A.Test<A.AreEqual<E<"0b10 | 0b101 << 0b10">, 0b10110>>
 type Test9 = A.Test<A.AreEqual<E<"(0b10 | 0b101) << 0b10">, 0b11100>>
 type Test10 = A.Test<A.AreEqual<E<`${0b100} | ${0b001 | 0b010}`>, 0b101 | 0b110>>
+type Test11 = A.Test<A.AreEqual<E<`${0b10} & ${number}`>, number>>
 
 namespace N {
   export type _And<A, B> =
@@ -148,6 +149,8 @@ export namespace Nb {
   type Digit = Unknown[number]
 
   export type And<A extends Unknown, B extends Unknown> =
+    Unknown extends A ? Unknown :
+    Unknown extends B ? Unknown :
     keyof A extends keyof B
       ? _TrimLeadingZeros<AndPadded<PadZerosSameAs<A, B>, B>>
       : And<B, A>
@@ -170,6 +173,8 @@ export namespace Nb {
 
   
   export type Or<A extends Unknown, B extends Unknown> =
+    Unknown extends A ? Unknown :
+    Unknown extends B ? Unknown :
     keyof A extends keyof B
       ? _TrimLeadingZeros<OrPadded<PadZerosSameAs<A, B>, B>>
       : Or<B, A>
@@ -190,6 +195,8 @@ export namespace Nb {
 
 
   export type LeftShift<A extends Unknown, B extends Unknown> =
+    Unknown extends A ? Unknown :
+    Unknown extends B ? Unknown :
     B extends ["0"]
       ? A
       : LeftShift<[...A, "0"], Decrement<B>>
@@ -229,6 +236,7 @@ export namespace Nb {
 
 
   export type FromNumber<T extends number> =
+    number extends T ? Nb.Unknown :
     A.Cast<FromDecimal<A.Cast<S.Split<`${T}`, "">, Nd.Unknown>>, Nb.Unknown>
 
   export type _FromNumber<T> = 
@@ -268,6 +276,7 @@ export namespace Nb {
 
 
   export type ToNumber<T extends Unknown> =
+    Unknown extends T ? number :
     L.Join<ToDecimal<T>, ""> extends `${infer X extends number}` ? X : never
 
   export type _ToNumber<T> =

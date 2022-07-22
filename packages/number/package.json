@@ -1,6 +1,6 @@
 {
   "name": "@sthir/number",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Functions and types to work with numbers",
   "main": "dist/sthir-number.cjs.js",
   "preconstruct": {
