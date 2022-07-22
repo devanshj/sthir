@@ -221,7 +221,7 @@ namespace I {
   >>
 
   type Test6 = A.Test<A.AreEqual<
-    Intersect<{ x: "A" } | string | number,  Not<object | number>>,
+    Intersect<{ x: "A" } | string | number, Not<object | number>>,
     string
   >>
 
@@ -231,12 +231,8 @@ namespace I {
   >>
 
   type IntersectWithNotBitwiseAndZero<A, B extends number> =
-    A extends number
-      ? number extends A
-          ? A
-          : N.E<`${A} & ${B}`> extends 0
-              ? never
-              : A
+    N.E<`${A & number} & ${B}`> extends 0
+      ? never
       : A
 
   type Test8 = A.Test<A.AreEqual<Intersect<0b01, Not<BitwiseAndZero<0b10>>>, never>>
