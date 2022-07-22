@@ -231,8 +231,10 @@ namespace I {
   >>
 
   type IntersectWithNotBitwiseAndZero<A, B extends number> =
-    N.E<`${A & number} & ${B}`> extends 0
-      ? never
+    A extends number
+      ? N.E<`${A & number} & ${B}`> extends 0
+        ? never
+        : A
       : A
 
   type Test8 = A.Test<A.AreEqual<Intersect<0b01, Not<BitwiseAndZero<0b10>>>, never>>
