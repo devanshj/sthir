@@ -1,6 +1,6 @@
 {
   "name": "@sthir/predicate",
-  "version": "0.0.9",
+  "version": "0.0.11",
   "description": "An eDSL to write typed predicates",
   "main": "dist/sthir-predicate.cjs.js",
   "preconstruct": {
@@ -36,6 +36,7 @@
     "babel-plugin-tester": "^10.1.0"
   },
   "dependencies": {
+    "@sthir/number": "^0.0.1",
     "babel-plugin-macros": "^3.1.0"
   }
 }
