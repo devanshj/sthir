@@ -1,4 +1,5 @@
 import { p, pa } from "../src"
+import * as N from "@sthir/number"
 import "./jest-expect-extras"
 
 const query = () => 
@@ -132,6 +133,50 @@ test("&", () => {
 
   if (pa(x, p(".flags &", 0b100))) {
     expectAreTypesEqual<typeof x.foo, string | number>().toBe(true)
+  }
+})
+
+test("& for Jason's tweet 1471212197183651841", () => {
+  // https://twitter.com/_developit/status/1471212197183651841
+
+  const Flag = {
+    Text: N.e("1 << 0"),
+    Element: N.e("1 << 1"),
+    Component: N.e("1 << 2"),
+    A: N.e("1 << 3"),
+    B: N.e("1 << 4"),
+    C: N.e("1 << 5"),
+  }
+  type Flag = typeof Flag
+  type NonNodeFlag = Flag["A"] | Flag["B"] | Flag["C"];
+
+  type PreactNode =
+    TextNode | ElementNode | ComponentNode;
+  
+  interface TextNode
+    { flags: N.E<`${Flag["Text"]} | ${NonNodeFlag}`>
+    , text: string
+    }
+
+  interface ElementNode
+    { flags: N.E<`${Flag["Element"]} | ${NonNodeFlag}`>
+    , element: unknown
+    }
+
+  interface ComponentNode
+    { flags: N.E<`${Flag["Component"]} | ${NonNodeFlag}`>
+    , component: unknown
+    }
+
+  const render = (node: PreactNode) => {
+    if (node.flags & Flag.Text) {
+      // @ts-expect-error
+      node.text
+    }
+
+    if (pa(node, p(".flags &", Flag.Text))) {
+      expectAreTypesEqual<typeof node.text, string>().toBe(true)
+    }
   }
 })
 
