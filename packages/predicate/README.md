@@ -104,13 +104,13 @@ export const pa:
 
 - Index (`.a`, `?.a`, `.a.b`, `.a?.b`, etc)
 - `typeof` (postfix)
+- `` `&${x}` `` (without space, requires typescript version 4.8 and higher)
 
 ### Supported comparators
 
 - `===`
 - `!==`
 - Implicit/Truthy eg `p(".a")`, same as `!== Falsy`
-- `&` (requires typescript version 4.8 and higher)
 
 ### Pragmatic choices regarding `!==`
 

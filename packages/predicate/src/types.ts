@@ -38,7 +38,7 @@ type PArgs<T, Self> =
 
 type PArgsNarrowed<T> =
   { [I in keyof T]:
-      [I, T] extends [1, [`${string} &`, number]] ? number : T[I]
+      [I, T] extends [1, [`${string} &${number}`, number]] ? number : T[I]
   }
 
 type PArgsR<O extends string, T extends unknown[]> =
@@ -52,6 +52,7 @@ type PArgsR<O extends string, T extends unknown[]> =
 type Operator<T> =
   | IndexFromPath<A.Path<T>>
   | "typeof"
+  | (T extends number ? `&${number}` : never)
 
 type Operate<T, O> = 
   T extends unknown
@@ -67,6 +68,8 @@ type Operate<T, O> =
           T extends null ? "object" :
           T extends object ? "object" :
           never :
+      O extends `&${infer X}`
+        ? N.E<`${T & number} & ${X}`> :
       never
     : never
 
@@ -83,13 +86,11 @@ type NormaliseOperations<Os> =
 type Comparator<T> =
   | "==="
   | "!=="
-  | (T extends number ? "&" : never)
 
 type Comparand<T, C> =
   T extends unknown
     ? C extends "===" ? T :
       C extends "!==" ? T :
-      C extends "&" ? number :
       never
     : never
   
@@ -102,24 +103,12 @@ type Constraint<Os, Cor, Cnd> =
                 PathFromIndex<Oh>,
                 Ot extends [] ? Cnd : Constraint<Ot, Cor, Cnd>
               > :
-          Oh extends "typeof"
-            ? Ot extends []
-                ? Cnd extends "string" ? string :
-                  Cnd extends "number" ? number :
-                  Cnd extends "bigint" ? bigint :
-                  Cnd extends "boolean" ? boolean :
-                  Cnd extends "symbol" ? symbol :
-                  Cnd extends "undefined" ? undefined :
-                  Cnd extends "null" ? object :
-                  Cnd extends "object" ? object :
-                  never
-                : unknown :
-          never
+          Ot extends []
+            ? I.Operator<Oh & string, Cnd>
+            : unknown
         : never :
   Cor extends "!=="
     ? I.Not<Constraint<Os, "===", Cnd>> :
-  Cor extends "&"
-    ? I.Not<Constraint<Os, "===", I.BitwiseAndZero<A.Cast<Cnd, number>>>> :
   never
 
 
@@ -127,29 +116,32 @@ namespace I {
   declare const $$not: unique symbol
   export type Not<T> = { [$$not]: T }
 
-  declare const $$bitwiseAndZero: unique symbol  
-  export type BitwiseAndZero<T extends number> = { [$$bitwiseAndZero]: T }
+  declare const $$operator: unique symbol  
+  export type Operator<T extends string, R> = { [$$operator]: [T, R] }
 
-  export type Intersect<A, B> = 
-    B extends Not<infer B>
-      ? [B] extends [BitwiseAndZero<infer B>]
-          ? IntersectWithNotBitwiseAndZero<A, B>
-          : IntersectWithNot<A, B> :
-    A & B
-
-  type IntersectWithNot<A, NotB, A_ = A> =
+  export type Intersect<A, _B, 
+    B = _B extends I.Not<infer B> ? B : _B,
+    IsNot = B extends _B ? false : true,
+    ACopy = A
+  > =
+    [B] extends [I.Operator<infer O, infer R>]
+      ? A extends unknown
+          ? Operate<A, O> extends R
+            ? IsNot extends true ? never : A
+            : IsNot extends true ? A : never
+          : never :
     A extends object
       ? A.Get<U.ToIntersection<
-          NotB extends unknown
-            ? [ object extends NotB ? never :
-                NotB extends object
+          B extends unknown
+            ? [ object extends B ? IsNot extends true ? never : A & B :
+                B extends object
                   ? O.Normalize<
                       & A
                       & O.Normalize<{
-                          [K in keyof NotB]:
+                          [K in keyof B]:
                             Intersect<
-                              A_ extends unknown ? A.Get<A_, K> : never,
-                              I.Not<NotB[K]>
+                              ACopy extends unknown ? A.Get<ACopy, K> : never,
+                              IsNot extends true ? I.Not<B[K]> : B[K]
                             >
                         }>
                     >
@@ -157,9 +149,9 @@ namespace I {
               ]
             : never
         >, 0>
-      : A extends NotB
-          ? never
-          : A
+      : IsNot extends true
+          ? A extends B ? never : A
+          : A & B
 
   type Test0 = A.Test<A.AreEqual<
     Intersect<"A" | "B" | "C", Not<"A" | "B">>,
@@ -230,16 +222,9 @@ namespace I {
     { a?: string } & { a: string }
   >>
 
-  type IntersectWithNotBitwiseAndZero<A, B extends number> =
-    A extends number
-      ? N.E<`${A & number} & ${B}`> extends 0
-        ? never
-        : A
-      : A
-
-  type Test8 = A.Test<A.AreEqual<Intersect<0b01, Not<BitwiseAndZero<0b10>>>, never>>
-  type Test9 = A.Test<A.AreEqual<Intersect<0b101, Not<BitwiseAndZero<0b110>>>, 0b101>>
-  type Test10 = A.Test<A.AreEqual<Intersect<{ a: 0b01 } | "foo", Not<{ a: BitwiseAndZero<0b10> }>>, "foo">>
+  type Test8 = A.Test<A.AreEqual<Intersect<0b01, Not<Operator<`&${0b10}`, 0>>>, never>>
+  type Test9 = A.Test<A.AreEqual<Intersect<0b101, Not<Operator<`&${0b110}`, 0>>>, 0b101>>
+  type Test10 = A.Test<A.AreEqual<Intersect<{ a: 0b01 } | "foo", Not<{ a: Operator<`&${0b10}`, 0> }>>, "foo">>
 }
 
 // ----------

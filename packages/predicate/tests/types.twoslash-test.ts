@@ -126,13 +126,25 @@ test("Issue #2", () => {
 })
 
 test("&", () => {
-  let x = {} as
-    | { flags: 0b101, foo: string }
-    | { flags: 0b110, foo: number }
-    | { flags: 0b010, foo: boolean }
+  interface A { flags: 0b101, foo: string }
+  interface B { flags: 0b110, foo: number }
+  interface C { flags: 0b010, foo: boolean }
+  let x = {} as A | B | C
 
-  if (pa(x, p(".flags &", 0b100))) {
+  if (pa(x, p(`.flags &${0b100}`))) {
     expectAreTypesEqual<typeof x.foo, string | number>().toBe(true)
+  }
+
+  if (pa(x, p(`.flags &${0b100} !==`, 0))) {
+    expectAreTypesEqual<typeof x.foo, string | number>().toBe(true)
+  }
+
+  if (pa(x, p(`.flags &${0b100} ===`, 0b100))) {
+    expectAreTypesEqual<typeof x.foo, string | number>().toBe(true)
+  }
+
+  if (pa(x, p(`.flags &${0b111} ===`, 0b101))) {
+    expectAreTypesEqual<typeof x.foo, string>().toBe(true)
   }
 })
 
@@ -174,7 +186,7 @@ test("& for Jason's tweet 1471212197183651841", () => {
       node.text
     }
 
-    if (pa(node, p(".flags &", Flag.Text))) {
+    if (pa(node, p(`.flags &${Flag.Text}`))) {
       expectAreTypesEqual<typeof node.text, string>().toBe(true)
     }
   }
