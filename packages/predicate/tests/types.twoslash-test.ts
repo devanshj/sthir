@@ -146,6 +146,10 @@ test("&", () => {
   if (pa(x, p(`.flags &${0b111} ===`, 0b101))) {
     expectAreTypesEqual<typeof x.foo, string>().toBe(true)
   }
+
+  if (pa(x, p(`.flags &${Math.random() > 0.5 ? 0b100 : 0b101} !==`, 0))) {
+    expectAreTypesEqual<typeof x.foo, string | number>().toBe(true)
+  }
 })
 
 test("& for Jason's tweet 1471212197183651841", () => {
