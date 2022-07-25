@@ -23,7 +23,7 @@ let d: 0b11 = N.e(`${a} | ${b}`)
 // compiles
 ```
 
-You can also use the macro version in `@sthir/number/macro` that uses [`babel-plugin-macro`](https://github.com/kentcdodds/babel-plugin-macros) to transform `N.e(\`${a} | ${b}\`)` into `a | b` for zero runtime overhead.
+You can also use the macro version in `@sthir/number/macro` that uses [`babel-plugin-macro`](https://github.com/kentcdodds/babel-plugin-macros) to transform ``N.e(`${a} | ${b}`)`` into `a | b` for zero runtime overhead.
 
 Supported operators are `&`, `|`, `<<`. We can have more operators but currently only these have a compelling use-case for using bitflag predicates with `@sthir/predicate`. If you have compelling use-cases for other operators feel free to open an issue.
 
