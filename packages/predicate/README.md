@@ -104,7 +104,7 @@ export const pa:
 
 - Index (`.a`, `?.a`, `.a.b`, `.a?.b`, etc)
 - `typeof` (postfix)
-- `` `&${x}` `` (without space, requires typescript version 4.8 and higher)
+- `` `&${x}` `` (without space, requires typescript version 4.8 and higher). See [this thread](https://twitter.com/devanshj__/status/1551972693053829120?t=F4wMtKuy-oCOML8iQLZytQ&s=19) for suggested usage.
 
 ### Supported comparators
 
