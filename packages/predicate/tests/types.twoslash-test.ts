@@ -207,6 +207,13 @@ test("Issue #8: index recursive", () => {
   pa(x, p(".foo .foo"))
 })
 
+test("Issue #11: Normalize an object to never if value at some key is never", () => {
+  let x = {} as { a: number; b: string } | { a: string; b: number }
+  if (pa(x, p(".a typeof ===", "number"))) {
+    expectAreTypesEqual<typeof x.b, string>().toBe(true)
+  }
+})
+
 const expectAreTypesEqual =
   <A, B>() => ({
     toBe:

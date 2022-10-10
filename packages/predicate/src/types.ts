@@ -445,9 +445,11 @@ namespace B {
 }
 
 namespace O {
-  export type Normalize<T> =
+  export type Normalize<T, K = keyof T> =
     {} extends T ? unknown :
-    T[keyof T] extends never ? never :
+    unknown extends (K extends unknown ? A.Get<T, K> extends never ? unknown : never : never)
+      ? never :
     T
+
+  type Test1 = A.Test<A.AreEqual<O.Normalize<{ a: string, b: number } & { a: number }>, never>>
 }
- 
