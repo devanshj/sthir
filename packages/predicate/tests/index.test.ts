@@ -8,6 +8,6 @@ test("implementation", () => {
 
   expect(pa(
     0b11 as number,
-    p("&", 0b10)
+    p(`&${0b10}`)
   )).toBe(0b11 & 0b10)
 })
