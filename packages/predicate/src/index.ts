@@ -24,7 +24,7 @@ const pImpl: PImpl = (...a) => t => {
   return osCor.reduce((v, x) => {
     if (doesStartWith(x, ".") || doesStartWith(x, "?.")) return get(
       v,
-      x.replace("?.", ".").replace(/^\./, "").split(".")
+      x.replace(/\?\./g, ".").replace(/^\./g, "").split(".")
     )
     if (x === "typeof") return typeof v
     if (x === "===") return v === (cnd as unknown)
