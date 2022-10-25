@@ -4,8 +4,8 @@
 
 Write inferred type predicates...
 
-- With the `p` eDSL... Head over to [this twitter thread](https://twitter.com/devanshj__/status/1477950624343871488) for an introduction.
-- With `pm`.
+- With the `p` eDSL... See [this twitter thread](https://twitter.com/devanshj__/status/1477950624343871488) for an introduction.
+- With `pm`... See [this twitter thread](https://twitter.com/devanshj__/status/1585014432379199488) for an introduction.
 
 ## Exports
 
