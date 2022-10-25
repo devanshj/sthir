@@ -5,7 +5,36 @@
 Write inferred type predicates...
 
 - With the `p` eDSL... Head over to [this twitter thread](https://twitter.com/devanshj__/status/1477950624343871488) for an introduction.
-- With `pt`.
+- With `pm`.
+
+## Exports
+
+```ts
+// `p` is short for `predicate`
+// (this is a pseudo type)
+export const p:
+  < T
+  , OsCor extends Join<[...Operator[], Comparator?], " ">
+  , Cnd extends (HasComparator<OsCor> extends true ? [Comparand] : [])
+  >
+    ( operatorsMaybeComparator?: OsCor
+    , ...comparand: Cnd
+    ) =>
+      (operand: T) =>
+        operand is Narrow<T, OsCor, Cnd>
+
+// `pm` is short for `predicateFromMaybe`
+export const pm:
+  <T, U extends T>
+    (f: (t: T) => [T] | []) =>
+      (t: T) => t is U
+
+// `pa` is short for `predicateApply`
+export const pa:
+  <T, U extends T>
+    (operand: T, predicate: (t: T) => t is U) =>
+      operand is U
+```
 
 ## `p`
 
@@ -82,29 +111,6 @@ Gets transformed in build-time to
 (t => typeof t.a?.b === y)(x);
 ```
 
-### API
-
-```ts
-// `p` is short for `predicate`
-// (this is a pseudo type)
-export const p:
-  < T
-  , OsCor extends Join<[...Operator[], Comparator?], " ">
-  , Cnd extends (HasComparator<OsCor> extends true ? [Comparand] : [])
-  >
-    ( operatorsMaybeComparator?: OsCor
-    , ...comparand: Cnd
-    ) =>
-      (operand: T) =>
-        operand is Narrow<T, OsCor, Cnd>
-
-// `pa` is short for `predicateApply`
-export const pa:
-  <T, U extends T>
-    (operand: T, predicate: (t: T) => t is U) =>
-      operand is U
-```
-
 #### Supported operators
 
 - Index (`.a`, `?.a`, `.a.b`, `.a?.b`, etc)
@@ -168,38 +174,28 @@ Usually it's not a big deal, it's okay to use `!==`, semantics are important, `i
   ```
 - Maybe more
 
-## `pt`
+## `pm`
 
 Like `p` except it relies on TypeScript's narrowing algorithm, which is less complete than `p`'s.
 
 ```ts
-import { p } from "@sthir/predicate"
+import { pm } from "@sthir/predicate"
 
 declare let xs:
-  (undefined | { a: string | number } | { b: string })[]
+  (string | undefined)[]
 
-
-// Without @sthir/predicate ...
-
+// Without @sthir/predicate's pm ...
 xs
-.filter(x => typeof x?.a === "string") 
-//                     ~
-// Property 'a' does not exist on type '{ a: string | number; } | { b: string; }'.
-//    Property 'a' does not exist on type '{ b: string; }'
-.map(x => x.a.toUpperCase())
+.filter(x => x !== undefined)
+.map(x => x.toUpperCase())
 //        ~
-// Object is possibly 'undefined'
-//          ~
-// Property 'a' does not exist on type '{ a: string | number; } | { b: string; }'.
-//    Property 'a' does not exist on type '{ b: string; }'
+// Object is possibly undefined.
 
 
-
-// With @sthir/predicate's pt ...
-
+// With @sthir/predicate's pm ...
 xs
-.filter(pt(x => "a" in x && typeof x.a === "string" ? [x] : []))
-.map(x => x.a.toUpperCase())
+.filter(pm(x => x !== undefined ? [x] : []))
+.map(x => x.toUpperCase())
 ```
 
 ### Versioning notes

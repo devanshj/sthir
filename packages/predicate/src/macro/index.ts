@@ -1,18 +1,21 @@
 import type { types as bt, NodePath as btNodePath } from "@babel/core"
 import { createMacro, MacroError } from "babel-plugin-macros"
 
-export default createMacro(({ references, babel: { types: bt, parse, traverse } }) => {
+export default createMacro(({ references: _references, babel: { types: bt, parse, traverse } }) => {
+  let references = _references as unknown as
+    { [K in keyof typeof import("../")]: btNodePath<bt.Node>[] }
+
   const main = () => doAndMapStringError(() => {
-    transformPReferences(references.p ?? [])
-    transformPtReferences(references.pt ?? [])
-    transformPaReferences(references.pa ?? [])
+    transformP(references.p ?? [])
+    transformPm(references.pm ?? [])
+    transformPa(references.pa ?? [])
   }, e => new MacroError(e))
 
   
   // ----------
   // p
 
-  const transformPReferences = (refs: btNodePath<bt.Node>[]) => {
+  const transformP = (refs: btNodePath<bt.Node>[]) => {
     for (let path of refs.map(r => r.parentPath))
       path?.replaceWith(pMacro(parsePArguments(path.node)))
   }
@@ -145,7 +148,7 @@ export default createMacro(({ references, babel: { types: bt, parse, traverse } 
   // ----------
   // pa
 
-  const transformPaReferences = (refs: btNodePath<bt.Node>[]) => {
+  const transformPa = (refs: btNodePath<bt.Node>[]) => {
     for (let path of refs.map(r => r.parentPath))
       path?.replaceWith(paMacro(path.node))
   }
@@ -170,13 +173,13 @@ export default createMacro(({ references, babel: { types: bt, parse, traverse } 
   // ----------
   // pt
 
-  const transformPtReferences = (refs: btNodePath<bt.Node>[]) => {
+  const transformPm = (refs: btNodePath<bt.Node>[]) => {
     for (let path of refs.map(r => r.parentPath))
-      path?.replaceWith(ptMacro(path.node))
+      path?.replaceWith(pmMacro(path.node))
   }
 
-  const ptMacro = (node: bt.Node) => doAndMapStringError(() => {
-    if (!bt.isCallExpression(node)) throw "`pt` was expected to be called"
+  const pmMacro = (node: bt.Node) => doAndMapStringError(() => {
+    if (!bt.isCallExpression(node)) throw "`pm` was expected to be called"
     
     let as = node.arguments
     if (as.length !== 1) throw "Expected 1 argument"

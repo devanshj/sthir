@@ -48,9 +48,9 @@ tester({
     },
     "pt": {
       code: `
-        import { pa, pt } from "./predicate/src/macro";
+        import { pa, pm } from "./predicate/src/macro";
 
-        pa(x, pt(x => typeof x === "string" ? [x] : []))
+        pa(x, pm(x => typeof x === "string" ? [x] : []))
       `,
       output: `
         (t => (x => typeof x === "string" ? [x] : [])(t).length === 1)(x);

@@ -1,6 +1,6 @@
-export { p, pa, pt }
+export { p, pa, pm }
 
-import { P, Pa, Pt } from "./types"
+import { P, Pa, Pm } from "./types"
 
 // ----------
 // p
@@ -53,8 +53,8 @@ const pa =
 // ---------
 // pt
 
-const pt =
-  (f => t => f(t).length === 1) as Pt
+const pm =
+  (f => t => f(t).length === 1) as Pm
 
 
 // ----------
