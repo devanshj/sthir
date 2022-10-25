@@ -1,4 +1,4 @@
-import { p, pa } from "../src"
+import { p, pa, pt } from "../src"
 
 test("implementation", () => {
   expect(pa(
@@ -10,4 +10,9 @@ test("implementation", () => {
     0b11 as number,
     p(`&${0b10}`)
   )).toBe(0b11 & 0b10)
+
+  expect(pa(
+    "test" as string | number,
+    pt(x => typeof x === "string" ? [x] : [])
+  )).toBe(true)
 })

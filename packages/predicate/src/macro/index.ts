@@ -4,6 +4,7 @@ import { createMacro, MacroError } from "babel-plugin-macros"
 export default createMacro(({ references, babel: { types: bt, parse, traverse } }) => {
   const main = () => doAndMapStringError(() => {
     transformPReferences(references.p ?? [])
+    transformPtReferences(references.pt ?? [])
     transformPaReferences(references.pa ?? [])
   }, e => new MacroError(e))
 
@@ -164,6 +165,37 @@ export default createMacro(({ references, babel: { types: bt, parse, traverse } 
   }, e => `${e}, at ${loc(node)}`)
 
 
+
+
+  // ----------
+  // pt
+
+  const transformPtReferences = (refs: btNodePath<bt.Node>[]) => {
+    for (let path of refs.map(r => r.parentPath))
+      path?.replaceWith(ptMacro(path.node))
+  }
+
+  const ptMacro = (node: bt.Node) => doAndMapStringError(() => {
+    if (!bt.isCallExpression(node)) throw "`pt` was expected to be called"
+    
+    let as = node.arguments
+    if (as.length !== 1) throw "Expected 1 argument"
+
+    let [a0] = as as [bt.Node]
+    if (!bt.isExpression(a0)) throw "Expected an expression, at first argument"
+
+    return bt.arrowFunctionExpression(
+      [bt.identifier("t")],
+      bt.binaryExpression(
+        "===",
+        bt.memberExpression(
+          bt.callExpression(a0, [bt.identifier("t")]),
+          bt.identifier("length")
+        ),
+        bt.numericLiteral(1)
+      )
+    )
+  }, e => `${e}, at ${loc(node)}`)
 
 
   // ----------

@@ -1,4 +1,4 @@
-export { P, Pa }
+export { P, Pa, Pt }
 
 import * as N from "@sthir/number"
 
@@ -235,6 +235,14 @@ type Pa =
     (t: T, p: (t: T) => t is U) =>
       t is U
 
+
+// ----------
+// Pt
+
+type Pt =
+  <T, U extends T>
+    (f: (t: T) => [U] | []) =>
+      (t: T) => t is U
 
 
 // ----------

@@ -45,6 +45,16 @@ tester({
       output: `
         (t => (typeof t & (() => y)()) === z)(x);
       `
+    },
+    "pt": {
+      code: `
+        import { pa, pt } from "./predicate/src/macro";
+
+        pa(x, pt(x => typeof x === "string" ? [x] : []))
+      `,
+      output: `
+        (t => (x => typeof x === "string" ? [x] : [])(t).length === 1)(x);
+      `
     }
   },
 })

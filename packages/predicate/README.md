@@ -2,7 +2,12 @@
 
 [![npm](https://img.shields.io/npm/v/@sthir/predicate?labelColor=000000&color=cb3837)](https://npm.im/@sthir/predicate) [![Babel Macro](https://img.shields.io/badge/babel--macro-%F0%9F%8E%A3-f5da55.svg)](https://github.com/kentcdodds/babel-plugin-macros)
 
-An eDSL to write typed predicates. Head over to [this twitter thread](https://twitter.com/devanshj__/status/1477950624343871488) for an introduction.
+Write inferred type predicates...
+
+- With the `p` eDSL... Head over to [this twitter thread](https://twitter.com/devanshj__/status/1477950624343871488) for an introduction.
+- With `pt`.
+
+## `p`
 
 ```ts
 import { p } from "@sthir/predicate"
@@ -27,7 +32,7 @@ xs
 
 
 
-// With @sthir/predicate ...
+// With @sthir/predicate's p ...
 
 xs
 .filter(p("?.a typeof ===", "string"))
@@ -54,14 +59,14 @@ if (foo.bar.type === "x") {
 //   Property 'x' does not exist on type '{ bar: { type: "y"; }; y: number; }'
 }
 
-// With @sthir/predicate ...
+// With @sthir/predicate's p...
 
 if (pa(foo, p(".bar.type ===", "x"))) {
   foo.x
 }
 ```
 
-## Macro
+### Macro
 
 You can use the macro version with [`babel-plugin-macros`](https://github.com/kentcdodds/babel-plugin-macros)
 
@@ -77,7 +82,7 @@ Gets transformed in build-time to
 (t => typeof t.a?.b === y)(x);
 ```
 
-## API
+### API
 
 ```ts
 // `p` is short for `predicate`
@@ -100,19 +105,19 @@ export const pa:
       operand is U
 ```
 
-### Supported operators
+#### Supported operators
 
 - Index (`.a`, `?.a`, `.a.b`, `.a?.b`, etc)
 - `typeof` (postfix)
 - `` `&${x}` `` (without space, requires typescript version 4.8 and higher). See [this thread](https://twitter.com/devanshj__/status/1551972693053829120?t=F4wMtKuy-oCOML8iQLZytQ&s=19) for suggested usage.
 
-### Supported comparators
+#### Supported comparators
 
 - `===`
 - `!==`
 - Implicit/Truthy eg `p(".a")`, same as `!== Falsy`
 
-### Pragmatic choices regarding `!==`
+#### Pragmatic choices regarding `!==`
 
 Generally speaking (not just for this library), it's good to avoid `!==`, because `!==` introduces a "negative requirement" which is unintuitive. Let me give you an example...
 
@@ -148,7 +153,7 @@ const foo = (x: { a?: string } | { b: string }) => {
 
 Usually it's not a big deal, it's okay to use `!==`, semantics are important, `if (x !== undefined)` reads way better than `if (typeof x === 'string')`, just don't unnecessarily use `!==`.
 
-### Future
+#### Future
 
 - Numeric operators (`>`, `<=`, etc). One of the major use cases would be doing a `pa(xs, p(".length >=", 1))` would narrow `xs` from `T[]` to `[T, ...T[]]`.
 - Call operator `(...)`.
@@ -162,6 +167,40 @@ Usually it's not a big deal, it's okay to use `!==`, semantics are important, `i
   }
   ```
 - Maybe more
+
+## `pt`
+
+Like `p` except it relies on TypeScript's narrowing algorithm, which is less complete than `p`'s.
+
+```ts
+import { p } from "@sthir/predicate"
+
+declare let xs:
+  (undefined | { a: string | number } | { b: string })[]
+
+
+// Without @sthir/predicate ...
+
+xs
+.filter(x => typeof x?.a === "string") 
+//                     ~
+// Property 'a' does not exist on type '{ a: string | number; } | { b: string; }'.
+//    Property 'a' does not exist on type '{ b: string; }'
+.map(x => x.a.toUpperCase())
+//        ~
+// Object is possibly 'undefined'
+//          ~
+// Property 'a' does not exist on type '{ a: string | number; } | { b: string; }'.
+//    Property 'a' does not exist on type '{ b: string; }'
+
+
+
+// With @sthir/predicate's pt ...
+
+xs
+.filter(pt(x => "a" in x && typeof x.a === "string" ? [x] : []))
+.map(x => x.a.toUpperCase())
+```
 
 ### Versioning notes
 
