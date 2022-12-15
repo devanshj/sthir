@@ -1,0 +1,28 @@
+{
+  "name": "@sthir/runtime-checker",
+  "version": "0.1.0",
+  "description": "Parsers to perform runtime type checking",
+  "main": "dist/sthir-runtime-checker.cjs.js",
+  "preconstruct": { "entrypoints": ["index.ts"] },
+  "dependencies": {},
+  "devDependencies": {},
+  "author": {
+    "name": "Devansh Jethmalani",
+    "email": "jethmalani.devansh@gmail.com"
+  },
+  "license": "MIT",
+  "readme": "https://github.com/devanshj/sthir/tree/main/packages/runtime-checker/README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devanshj/sthir.git"
+  },
+  "scripts": {
+    "test": "jest",
+    "build": "cd ../../ && preconstruct build"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "prettierPath": ""
+  }
+}
