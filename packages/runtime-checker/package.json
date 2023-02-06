@@ -1,6 +1,6 @@
 {
   "name": "@sthir/runtime-checker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Parsers to perform runtime type checking",
   "main": "dist/sthir-runtime-checker.cjs.js",
   "preconstruct": { "entrypoints": ["index.ts"] },

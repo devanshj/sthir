@@ -33,7 +33,6 @@ export {
   UnknownParser,
   Parsed,
   Parsee,
-  ParseeConstraint,
 }
 
 
@@ -73,9 +72,6 @@ type Parsed<P extends UnknownParser> =
 
 type Parsee<P extends UnknownParser> =
   P extends Parser<any, infer A> ? A : never
-
-type ParseeConstraint<P extends UnknownParser> =
-  unknown extends Parsee<P> ? never : Parsee<P>
 
 interface _T
   { _isT: true }
@@ -584,7 +580,7 @@ const predicate = predicateImpl as unknown as Predicate
 
 type Then = 
   < T extends UnknownParser
-  , U extends Parser<any, ParseeConstraint<T>>
+  , U extends Parser<any, Parsed<T>>
   >
   (t: T, u: U) =>
     // TODO: perhaps we don't need the `Parsed<T> &` part?
