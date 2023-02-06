@@ -1,8 +1,9 @@
 {
   "name": "@sthir/runtime-checker",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Parsers to perform runtime type checking",
   "main": "dist/sthir-runtime-checker.cjs.js",
+  "module": "dist/sthir-runtime-checker.esm.js",
   "preconstruct": { "entrypoints": ["index.ts"] },
   "dependencies": {},
   "devDependencies": {},
