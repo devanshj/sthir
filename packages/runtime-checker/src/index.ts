@@ -560,7 +560,7 @@ const unknown: UnknownParser =
 
 type Predicate = 
   <T extends A, A>
-  (isT: (t: A) => t is T) =>
+  (isT: ((t: A) => t is T) | ((t: A) => boolean)) =>
     Parser<T, A>
 
 type PredicateImpl =
@@ -579,12 +579,17 @@ const predicate = predicateImpl as unknown as Predicate
 // ----------------------------------------------------------------------------------------------------
 
 type Then = 
-  < T extends UnknownParser
-  , U extends Parser<any, Parsed<T>>
-  >
-  (t: T, u: U) =>
-    // TODO: perhaps we don't need the `Parsed<T> &` part?
-    ParserAsserted<Parsed<T> & Parsed<U>, Parsee<T>>
+  { <A, T extends A, U extends T>
+    (t: Parser<T, A>, u: Parser<U, T>):
+      Parser<U, A>
+
+  , < T extends UnknownParser
+    , U extends Parser<any, Parsed<T>>
+    >
+    (t: T, u: U):
+      // TODO: perhaps we don't need the `Parsed<T> &` part?
+      ParserAsserted<Parsed<T> & Parsed<U>, Parsee<T>>
+  }
 
 type ThenImpl =
   (t: Parser<_A & _T, _A>, u: Parser<_A & _T & _U, _A & _T>) => Parser<_A & _T & _U, _A>
