@@ -165,7 +165,7 @@ type Union<Ps extends UnknownParser[]> =
     : never
 
 type ParserAsserted<T, A> =
-  Parser<[T] extends [A] ? T : T & A, A>
+  [T] extends [A] ? Parser<T, A> : Parser<T & A, A>
 
 type Test165 =
   Test<AreEqual<
@@ -260,14 +260,17 @@ type ObjectT<Ps> =
   >
 
 type UnifyStructure<T> =
-  { [K in keyof T]: T[K] }
+  { [K in keyof T]: T[K] } & unknown
 
 type CleanStructure<T> =
-  keyof T extends infer K
-    ? true extends (K extends unknown ? (unknown extends T[K & keyof T] ? true : false) : never)
-      ? unknown
-      : T
-    : never
+  IsStructureReducibleToUnknown<T> extends true
+    ? unknown
+    : T extends unknown[] ? T : { [K in keyof T as unknown extends T[K] ? never : K]: T[K] }
+
+type IsStructureReducibleToUnknown<T> = 
+  { [K in keyof T]-?:
+      unknown extends T[K & keyof T] ? true : K
+  }[keyof T & (T extends unknown[] ? number : unknown)] extends true ? true : false
 
 type ExtractOptionalProperty<K> = 
   K extends `${infer X}?`
@@ -294,6 +297,15 @@ type Test291 =
     Parser<
       { a: "a", b?: "b", "c?": "c" },
       { a: string, b?: string, "c?": string }
+    >
+  >>
+
+type Test300 =
+  Test<AreEqual<
+    ObjectT<{ a: Parser<"a">, "b?": Parser<"b", string>, "c\\?": Parser<"c"> }>,
+    Parser<
+      { a: "a", b?: "b", "c?": "c" },
+      { b?: string }
     >
   >>
 
@@ -383,6 +395,14 @@ type Test379 =
   Test<AreEqual<
     TupleT<[Parser<"a", string>, Parser<"b", string | number>, [Parser<"c", string>, "?"]]>,
     Parser<["a", "b", "c"?], [string, string | number, string?]>
+  >>
+
+type Test397 =
+  Test<AreEqual<
+    TupleT<[Parser<"a">, Parser<"b", string | number>, [Parser<"c">, "?"]]>,
+    Parser<["a", "b", "c"?], [unknown, string | number, unknown?]>
+    // TODO: perhaps make the parsee `{ 1: string | number }`? Should the above parsee
+    // have the same change?
   >>
 
 type TupleImpl = 

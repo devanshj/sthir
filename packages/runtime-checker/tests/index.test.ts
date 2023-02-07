@@ -1,38 +1,41 @@
-import * as t from "../src"
+import * as t from "../src/index"
 
 it("works", () => {
-  let tEvent = t.bindLazy(() => t.name("Event", t.union([
-    t.name("MouseDownEvent",
-      t.object({
-        type: t.value("MOUSEDOWN"),
-        x: t.intersect([tInteger, tPositive]),
-        y: t.intersect([tInteger, tPositive])
-      })
-    ),
-    t.name("MouseUpEvent",
-      t.object({
-        type: t.value("MOUSEUP"),
-        x: t.intersect([tInteger, tPositive]),
-        y: t.intersect([tInteger, tPositive])
-      })
-    )
-  ])))
+  let tEvent = nameInference(
+    t.bindLazy(() => t.name("Event", t.union([
+      t.name("MouseDownEvent",
+        t.object({
+          type: t.value("MOUSEDOWN"),
+          x: t.then(t.number, t.intersect([tInteger, tPositive])),
+          y: t.then(t.number, t.intersect([tInteger, tPositive]))
+        })
+      ),
+      t.name("MouseUpEvent",
+        t.object({
+          type: t.value("MOUSEUP"),
+          x: t.then(t.number, t.intersect([tInteger, tPositive])),
+          y: t.then(t.number, t.intersect([tInteger, tPositive]))
+        })
+      )
+    ]))), t => {
 
-  let tInteger = t.name("Integer",
-    t.then(
-      t.number,
-      t.predicate((x: number): x is number & { [isInteger]: true } => Number.isInteger(x))
-    )
-  )
+    type Event = MouseDownEvent | MouseUpEvent
+    interface MouseDownEvent extends Extract<t.Parsed<typeof t>, { type: "MOUSEDOWN" }> {}
+    interface MouseUpEvent extends Extract<t.Parsed<typeof t>, { type: "MOUSEUP" }> {}
+    return {} as t.Parser<Event>
+  })
+
+  let tInteger = t.name("Integer", t.predicate(
+    (x: number): x is number & Integer => Number.isInteger(x)
+  ))
   const isInteger = Symbol("isInteger")
-
-  let tPositive = t.name("Positive",
-    t.then(
-      t.number,
-      t.predicate((x: number): x is number & { [isPositive]: true } => x > 0)
-    )
-  )
+  interface Integer { [isInteger]: true }
+  
+  let tPositive = t.name("Positive", t.predicate(
+    (x: number): x is number & Positive => x > 0
+  ))
   const isPositive = Symbol("isPositive")
+  interface Positive { [isPositive]: true }
 
   expect(errors(tEvent, { x: 10.5, y: -20.5 }).map((a, i) => `${i + 1}.\n${a}`).join("\n\n")).toMatchInlineSnapshot(`
     "1.
@@ -63,3 +66,13 @@ it("works", () => {
 
 const errors = <T extends t.UnknownParser>(p: T, a: t.Parsee<T>) =>
   [...t.accumulateErrors(p)(a as never)].flatMap(y => y && y.type === "error" ? [y.value] : [])
+
+// `@sthir/miscellaneous`?
+const nameInference =
+  (a => a) as
+    <I, T>
+    ( i: I
+    , t: (t: I) => T
+    , ..._: [I] extends [T] ? [] : ["Error: Inferred type is not assignable to named type"]
+    ) =>
+      T
