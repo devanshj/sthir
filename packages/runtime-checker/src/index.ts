@@ -1,4 +1,8 @@
 // TODO:
+// - lazify everthing
+//   - intersect
+//   - Object.entries usages
+//   - Array.prototype.entries usages
 // - tests
 // - ok and innerOk with score
 
@@ -6,6 +10,7 @@ export {
   Parser,
   name_ as name,
   is,
+  assert,
 
   intersect,
   union,
@@ -30,6 +35,7 @@ export {
   accumulateErrors,
 
   bindLazy,
+  nameInference,
   UnknownParser,
   Parsed,
   Parsee,
@@ -47,6 +53,10 @@ interface Parser<out T extends [A] extends [never] ? unknown : A, in A = unknown
   { (this: unknown, a: A): Generator<ParserYield<T>, void>
   , typeName?: string
   }
+
+type ParserThis = 
+  | undefined
+  | { typeName?: string }
 
 /** supertype of all parsers, ie all parsers are assignable to this type */
 interface UnknownParser
@@ -127,7 +137,6 @@ let intersectImpl: IntersectImpl = ps => {
   ps = ps.filter(p => p !== unknown)
   if (ps.length === 1) return ps[0]!
   return function* (a) {
-    let eP = hasTypeName(this) ? `is not of type '${this.typeName}' as it ` : ""
     let gs = [] as ReturnType<Parser<_T>>[]
     let irs = [] as Extract<keyof typeof gs, number>[]
 
@@ -138,7 +147,7 @@ let intersectImpl: IntersectImpl = ps => {
         if (irs.includes(i)) continue
         let y = g.next().value
         if (!y) { irs.push(i); continue }
-        if (y.type === "error") { yield { type: "error", value: eP + y.value }; everyOk = false; continue }
+        if (y.type === "error") { yield { type: "error", value: y.value }; everyOk = false; continue }
         if (y.type === "innerOk") { yield y; continue }
         if (y.type === "ok") { yield { type: "innerOk" }; continue }
         assertNever(y)
@@ -189,7 +198,7 @@ type UnionImpl =
   (ps: Parser<_T>[]) => Parser<_T>
 
 let unionImpl: UnionImpl = ps => function* (a) {
-  let eP = (hasTypeName(this) ? `is not of type '${this.typeName}', as it ` : "")
+  let eP = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
   let gs = ps.map(() => undefined as ReturnType<Parser<_T>> | undefined)
   let irs = [] as Extract<keyof typeof gs, number>[]
   let bestI = undefined as Extract<keyof typeof ps, number> | undefined
@@ -222,15 +231,22 @@ let unionImpl: UnionImpl = ps => function* (a) {
       yield* gs[bestI!]!
     }
   } else {
-    let bestName = ps[bestI!]!.typeName ?? ordinal(bestI!) + " constituent"
-    eP += `did not match any contituents, best match was '${bestName}', but it `
+    eP += `did not match any contituents, best match was '${ps[bestI!]!.typeName ?? "<unnamed>"}' but`
     yield* bestYs.map((y): ParserYield<_T> => {
-      if (y?.type === "error") return { type: "error", value: eP + y.value }
+      if (y?.type === "error") {
+        return {
+          type: "error",
+          value: eP + y.value.replace(/is not of type '[^']+' as/, "")
+        }
+      }
       return y
     })
     if (bestYs.slice(-1)[0] !== undefined) {
       for (let y of gs[bestI!]!) {
-        if (y?.type === "error") { yield { type: "error", value: eP + y.value }; continue }
+        if (y?.type === "error") {
+          yield { type: "error", value: eP + y.value.replace(/is not of type '[^']+' as/, "") };
+          continue
+        }
         yield y
       }
     }
@@ -313,7 +329,7 @@ type ObjectImpl =
   (ps: Record<string, Parser<_T>>) => Parser<Record<string, _T>>
 
 const objectImpl: ObjectImpl = ps => function* (a) {
-  let eP = hasTypeName(this) ? `is not of type '${this.typeName}' as it ` : ""
+  let eP = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
 
   if (typeof a !== "object" || a === null) {
     yield { type: "error", value: eP + "is not an object" }
@@ -327,10 +343,7 @@ const objectImpl: ObjectImpl = ps => function* (a) {
     }
   }
   
-  eP =
-    eP === "" ? eP :
-    eP.slice(0, "it ".length * -1) + "it's "
-
+  eP = eP.slice(0, "it ".length * -1) + "it's "
   for (let y of intersect(Object.entries(a).flatMap(([k, v]) => {
     let p = ps[k] ?? ps[k + "?"]
     if (!p) return []
@@ -410,7 +423,7 @@ type TupleImpl =
 
 const tupleImpl: TupleImpl = ps => then(
   function* (a: unknown) {
-    let eP: string = hasTypeName(this) ? `is not of type '${this.typeName}' as it ` : ""
+    let eP: string = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
     if (!Array.isArray(a)) {
       yield { type: "error", value: eP + "is not an array" }
       return
@@ -458,17 +471,14 @@ type RecordImpl =
   (k: Parser<_K>, v: Parser<_T>) => Parser<Record<_K, _T>>
 
 const recordImpl: RecordImpl = (k, v) => function* (a) {
-  let eP = hasTypeName(this) ? `is not of type '${this.typeName}' as it ` : ""
+  let eP = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
 
   if (typeof a !== "object" || a === null) {
     yield { type: "error", value: eP + "is not an object" }
     return
   }
 
-  eP =
-    eP === "" ? eP :
-    eP.slice("it ".length * -1) + "it's "
-
+  eP = eP.slice("it ".length * -1) + "it's "
   for (let y of intersect(Object.entries(a).map(([ak, av]) => intersect([k === unknown ? unknown : function*(_: unknown) {
     for (let y of k(ak)) {
       if (y?.type === "error") { yield { type: "error", value: eP + `key '${ak}' ${y.value}` }; continue }
@@ -502,7 +512,7 @@ type ArrayImpl =
 
 const arrayImpl: ArrayImpl = p => then(
   function*(a: unknown) {
-    let eP: string = hasTypeName(this) ? `is not of type '${this.typeName}' as it ` : ""
+    let eP: string = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
     if (!Array.isArray(a)) {
       yield { type: "error", value: eP + "is not an array" }
       return
@@ -535,8 +545,12 @@ type TypeImpl =
     Parser<Types[keyof Types]>
 
 const typeImpl: TypeImpl = t => function* (a) {
-  let eP = hasTypeName(this) ? `is not of type '${this.typeName}' as it ` : ""
-  if (typeof a !== t) { yield { type: "error", value: eP + `is not ${t}` }; return }
+  let eP =
+    (this as ParserThis)?.typeName !== undefined
+      ? `is not of type '${(this as ParserThis)?.typeName!}' as it `
+      : ""
+
+  if (typeof a !== t) { yield { type: "error", value: eP + `is not of type '${t}'` }; return }
   yield { type: "ok", value: a as Types[keyof Types] }
 }
 
@@ -558,10 +572,13 @@ type Value =
       Parser<E>
 
 const value = (e => function* (a) {
-  let eP = hasTypeName(this) ? `is not of type '${this.typeName}' as it ` : ""
+  let eP =
+    (this as ParserThis)?.typeName !== undefined
+      ? `is not of type '${(this as ParserThis)?.typeName!}' as it `
+      : ""
   let s = e === undefined ? "undefined" : e === null ? "null" : e.toString()
 
-  if (a !== e) { yield { type: "error", value: eP + `as it is not ${s}` }; return }
+  if (a !== e) { yield { type: "error", value: eP + `is not of type '${s}'` }; return }
   yield { type: "ok", value: a }
 }) as Value
 
@@ -589,7 +606,7 @@ type PredicateImpl =
 
 const predicateImpl: PredicateImpl = isT => function* (a) {
   if (isT(a)) { yield { type: "ok", value: a }; return }
-  yield { type: "error", value: `is not of type '${hasTypeName(this) ? this.typeName : "<unnamed>"}'` }
+  yield { type: "error", value: `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}'` }
 }
 
 const predicate = predicateImpl as unknown as Predicate
@@ -636,9 +653,6 @@ const then = thenImpl as unknown as Then
 const name_ = <T extends UnknownParser>(typeName: string, parser: T) =>
   Object.assign(parser.bind({ typeName }), { typeName }) as T
 
-const hasTypeName = (x: unknown): x is { typeName: string } => 
-  x !== undefined && x !== null && typeof (x as { typeName?: unknown }).typeName === "string"
-
 
 
 // ----------------------------------------------------------------------------------------------------
@@ -649,12 +663,24 @@ type Is =
     value is Parsed<P>
 
 const is = ((v, p) => {
-  for (let r of p(v)) {
-    if (r?.type === "error") return false
-    if (r?.type === "ok") return true
+  for (let y of p(v)) {
+    if (y?.type === "error") return false
+    if (y?.type === "ok") return true
   }
 }) as Is
 
+
+
+// ----------------------------------------------------------------------------------------------------
+
+type Assert =
+  <T, P extends Parser<T, T>>
+  (value: T, parser: P) =>
+    asserts value is Parsed<P>
+
+const assert: Assert = ((v, p) => {
+  for (let y of p(v)) if (y?.type === "error") throw new Error(y.value)
+})
 
 
 // ----------------------------------------------------------------------------------------------------
@@ -773,6 +799,16 @@ const accumulateErrors = accumulateErrorsImpl as unknown as AccumulateErrors
 
 const bindLazy =
   (f => function(a) { return f().bind(this)(a) }) as <T extends UnknownParser>(f: () => T) => T
+
+const nameInference =
+  (a => a) as
+    <I, T>
+    ( i: I
+    , t: (t: I) => T
+    , ...errorInferredTypeNotAssignableToNamedType:
+        [I] extends [T] ? [] : ["Error: Inferred type is not assignable to named type"]
+    ) =>
+      T
 
 // ----------------------------------------------------------------------------------------------------
 

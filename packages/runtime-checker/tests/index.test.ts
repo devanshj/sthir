@@ -1,18 +1,18 @@
 import * as t from "../src/index"
 
 it("works", () => {
-  let tEvent = nameInference(
+  let tEvent = t.nameInference(
     t.bindLazy(() => t.name("Event", t.union([
       t.name("MouseDownEvent",
         t.object({
-          type: t.value("MOUSEDOWN"),
+          type: t.value("MOUSE_DOWN"),
           x: t.then(t.number, t.intersect([tInteger, tPositive])),
           y: t.then(t.number, t.intersect([tInteger, tPositive]))
         })
       ),
       t.name("MouseUpEvent",
         t.object({
-          type: t.value("MOUSEUP"),
+          type: t.value("MOUSE_UP"),
           x: t.then(t.number, t.intersect([tInteger, tPositive])),
           y: t.then(t.number, t.intersect([tInteger, tPositive]))
         })
@@ -20,8 +20,8 @@ it("works", () => {
     ]))), t => {
 
     type Event = MouseDownEvent | MouseUpEvent
-    interface MouseDownEvent extends Extract<t.Parsed<typeof t>, { type: "MOUSEDOWN" }> {}
-    interface MouseUpEvent extends Extract<t.Parsed<typeof t>, { type: "MOUSEUP" }> {}
+    interface MouseDownEvent extends Extract<t.Parsed<typeof t>, { type: "MOUSE_DOWN" }> {}
+    interface MouseUpEvent extends Extract<t.Parsed<typeof t>, { type: "MOUSE_UP" }> {}
     return {} as t.Parser<Event>
   })
 
@@ -39,22 +39,22 @@ it("works", () => {
 
   expect(errors(tEvent, { x: 10.5, y: -20.5 }).map((a, i) => `${i + 1}.\n${a}`).join("\n\n")).toMatchInlineSnapshot(`
     "1.
-    is not of type 'Event', as it did not match any contituents, best match was 'MouseDownEvent', but it is not of type 'MouseDownEvent' as it is missing key 'type'
+    is not of type 'Event' as it did not match any contituents, best match was 'MouseDownEvent' but it is missing key 'type'
 
     2.
-    is not of type 'Event', as it did not match any contituents, best match was 'MouseDownEvent', but it is not of type 'MouseDownEvent' as
+    is not of type 'Event' as it did not match any contituents, best match was 'MouseDownEvent' but
       it is missing key 'type'
       it's value at key 'x' is not of type 'Integer'
 
     3.
-    is not of type 'Event', as it did not match any contituents, best match was 'MouseDownEvent', but it is not of type 'MouseDownEvent' as
+    is not of type 'Event' as it did not match any contituents, best match was 'MouseDownEvent' but
       it is missing key 'type'
       it's value at key
         'x' is not of type 'Integer'
         'y' is not of type 'Integer'
 
     4.
-    is not of type 'Event', as it did not match any contituents, best match was 'MouseDownEvent', but it is not of type 'MouseDownEvent' as
+    is not of type 'Event' as it did not match any contituents, best match was 'MouseDownEvent' but
       it is missing key 'type'
       it's value at key
         'x' is not of type 'Integer'
@@ -66,13 +66,3 @@ it("works", () => {
 
 const errors = <T extends t.UnknownParser>(p: T, a: t.Parsee<T>) =>
   [...t.accumulateErrors(p)(a as never)].flatMap(y => y && y.type === "error" ? [y.value] : [])
-
-// `@sthir/miscellaneous`?
-const nameInference =
-  (a => a) as
-    <I, T>
-    ( i: I
-    , t: (t: I) => T
-    , ..._: [I] extends [T] ? [] : ["Error: Inferred type is not assignable to named type"]
-    ) =>
-      T
