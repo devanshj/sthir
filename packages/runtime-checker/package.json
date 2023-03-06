@@ -1,6 +1,6 @@
 {
   "name": "@sthir/runtime-checker",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Parsers to perform runtime type checking",
   "main": "dist/sthir-runtime-checker.cjs.js",
   "module": "dist/sthir-runtime-checker.esm.js",
