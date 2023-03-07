@@ -156,7 +156,7 @@ let intersectImpl: IntersectImpl = ps => {
     ps = ps.filter(p => p !== unknown)
     if ((ps as Parser<_T>[]).length === 1) return (ps as Parser<_T>[])[0]!
   }
-  return function* (a) {
+  return function*(a) {
     let gs = [] as ReturnType<Parser<_T>>[]
     let psLength = Infinity
     let irs = [] as number[]
@@ -232,7 +232,7 @@ type TestL171 =
 type UnionImpl =
   (ps: Iterable<Parser<_T>>) => Parser<_T>
 
-let unionImpl: UnionImpl = ps => function* (a) {
+let unionImpl: UnionImpl = ps => function*(a) {
   let eP = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
   let gs = [] as ReturnType<Parser<_T>>[]
   let bestI = undefined as number | undefined
@@ -372,7 +372,7 @@ type Test300 =
 type ObjectImpl = 
   (ps: Record<string, Parser<_T>>) => Parser<Record<string, _T>>
 
-const objectImpl: ObjectImpl = ps => function* (a) {
+const objectImpl: ObjectImpl = ps => function*(a) {
   let eP = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
 
   if (typeof a !== "object" || a === null) {
@@ -466,7 +466,7 @@ type Test397 =
 type TupleImpl = 
   (ps: (Parser<_T> | [Parser<_T>, "?"])[]) => Parser<unknown[] & Record<string, _T>>
 
-const tupleImpl: TupleImpl = ps => function* (a: unknown) {
+const tupleImpl: TupleImpl = ps => function*(a: unknown) {
     let eP: string = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
     if (!Array.isArray(a)) {
       yield { type: "error", value: eP + "is not an array" }
@@ -484,19 +484,21 @@ const tupleImpl: TupleImpl = ps => function* (a: unknown) {
   }
 
   eP = eP.slice(0, "it ".length * -1) + "it's "
-  for (let y of intersect((function* (){
-    for (let i of a) {
-      let p = (x => Array.isArray(x) ? x[0] : x)(ps[i])
-      if (!p) continue
-      yield function*(_: undefined) {
-        let v = a[i as keyof typeof a] as _T
-        for (let y of p!(v)) {
-          if (y?.type === "error") { yield { type: "error" as "error", value: eP + `value at key '${i}' ${y.value}` }; continue }
-          yield y
+  for (let y of intersect({
+    [Symbol.iterator]: function*(){
+      for (let i of a) {
+        let p = (x => Array.isArray(x) ? x[0] : x)(ps[i])
+        if (!p) continue
+        yield function*(_: undefined) {
+          let v = a[i as keyof typeof a] as _T
+          for (let y of p!(v)) {
+            if (y?.type === "error") { yield { type: "error" as "error", value: eP + `value at key '${i}' ${y.value}` }; continue }
+            yield y
+          }
         }
       }
     }
-  })())(undefined)) {
+  })(undefined)) {
     if (!y) { yield y; continue }
     if (y.type === "ok") { yield { type: "ok", value: a as unknown[] & Record<string, _T> }; continue }
     yield y
@@ -538,7 +540,7 @@ type Test428 =
 type RecordImpl = 
   (k: Parser<_K>, v: Parser<_T>) => Parser<Record<_K, _T>>
 
-const recordImpl: RecordImpl = (k, v) => function* (a) {
+const recordImpl: RecordImpl = (k, v) => function*(a) {
   let eP = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
 
   if (typeof a !== "object" || a === null) {
@@ -546,23 +548,28 @@ const recordImpl: RecordImpl = (k, v) => function* (a) {
     return
   }
 
-  eP = eP.slice("it ".length * -1) + "it's "
-  for (let y of intersect((function*() {
-    for (let ak in a) {
-      let av = a[ak as keyof typeof a] as _T
-      yield intersect([k === unknown || k === string ? unknown : function*(_: unknown) {
-    for (let y of k(ak)) {
-      if (y?.type === "error") { yield { type: "error", value: eP + `key '${ak}' ${y.value}` }; continue }
-      yield y
+  eP = eP.slice(0, "it ".length * -1) + "it's "
+  for (let y of intersect({
+    [Symbol.iterator]: function*() {
+      for (let ak in a) {
+        let av = a[ak as keyof typeof a] as _T
+        yield intersect([
+          k === unknown || k === string ? unknown : function*(_: undefined) {
+            for (let y of k(ak)) {
+              if (y?.type === "error") { yield { type: "error", value: eP + `key '${ak}' ${y.value}` }; continue }
+              yield y
+            }
+          },
+          function*(_: undefined) {
+            for (let y of v(av)) {
+              if (y?.type === "error") { yield { type: "error", value: eP + `value at key '${ak}' ${y.value}` }; continue }
+              yield y
+            }
+          }
+        ])
+      }
     }
-  }, function*(_: unknown) {
-    for (let y of v(av)) {
-      if (y?.type === "error") { yield { type: "error", value: eP + `value at key '${ak}' ${y.value}` }; continue }
-      yield y
-    }
-      }])
-    }
-  })())(undefined)) {
+  })(undefined)) {
     if (!y) { yield y; continue }
     if (y.type === "ok") { yield { type: "ok", value: a as Record<_K, _T> }; continue }
     yield y
@@ -617,7 +624,7 @@ type TypeImpl =
   (t: keyof Types) =>
     Parser<Types[keyof Types]>
 
-const typeImpl: TypeImpl = t => function* (a) {
+const typeImpl: TypeImpl = t => function*(a) {
   let eP =
     (this as ParserThis)?.typeName !== undefined
       ? `is not of type '${(this as ParserThis)?.typeName!}' as it `
@@ -644,7 +651,7 @@ type Value =
     (e: E) =>
       Parser<E>
 
-const value = (e => function* (a) {
+const value = (e => function*(a) {
   let eP =
     (this as ParserThis)?.typeName !== undefined
       ? `is not of type '${(this as ParserThis)?.typeName!}' as it `
@@ -662,7 +669,7 @@ const null_ = value(null)
 // ----------------------------------------------------------------------------------------------------
 
 const unknown: UnknownParser =
-  function* (a: unknown) { yield { type: "ok", value: a } }
+  function*(a: unknown) { yield { type: "ok", value: a } }
 
 
 
@@ -677,7 +684,7 @@ type PredicateImpl =
   (isT: (t: _A) => t is _A & _T) =>
     Parser<_A & _T, _A>
 
-const predicateImpl: PredicateImpl = isT => function* (a) {
+const predicateImpl: PredicateImpl = isT => function*(a) {
   if (isT(a)) { yield { type: "ok", value: a }; return }
   yield { type: "error", value: `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}'` }
 }
@@ -704,7 +711,7 @@ type Then =
 type ThenImpl =
   (t: Parser<_A & _T, _A>, u: Parser<_A & _T & _U, _A & _T>) => Parser<_A & _T & _U, _A>
 
-const thenImpl: ThenImpl = (t, u) => function* (a) {
+const thenImpl: ThenImpl = (t, u) => function*(a) {
   let isT = true
   for (let y of t.bind(this)(a)) {
     if (!y) continue;
@@ -778,7 +785,7 @@ type AccumulateErrors =
 type AccumulateErrorsImpl =
   (p: UnknownParser) => UnknownParser
 
-const accumulateErrorsImpl: AccumulateErrorsImpl = p => function* (a) {
+const accumulateErrorsImpl: AccumulateErrorsImpl = p => function*(a) {
   type Node = {
     value: string,
     children: Node[],
