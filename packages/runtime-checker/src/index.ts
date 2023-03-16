@@ -1,5 +1,5 @@
 // TODO:
-// - improve `acculateErrors` regarding breadth-first errors
+// - rewrite `accumulateErrors`
 // - (maybe) cachify iterables
 // - (maybe) functionalify some parts around iterables
 // - tests
@@ -33,7 +33,6 @@ export {
 
   value,
   predicate,
-  accumulateErrors,
 
   bindLazy,
   UnknownParser,
@@ -775,117 +774,6 @@ type Assert =
 const assert: Assert = ((v, p) => {
   for (let y of p(v)) if (y?.type === "error") throw new Error(y.value)
 })
-
-
-// ----------------------------------------------------------------------------------------------------
-
-type AccumulateErrors = 
-  <P extends UnknownParser>(p: P) => P
-
-type AccumulateErrorsImpl =
-  (p: UnknownParser) => UnknownParser
-
-const accumulateErrorsImpl: AccumulateErrorsImpl = p => function*(a) {
-  type Node = {
-    value: string,
-    children: Node[],
-    readonly parent: Node | undefined
-  }
-
-  let root: Node = { value: "", children: [], parent: undefined }
-  let cursor: Node | undefined = undefined
-
-  for (let y of p(a)) {
-    if (y?.type !== "error") { yield y; continue }
-    while (true) {
-      let newErrorText = y.value
-      if (!cursor) {
-        let newCursor = {
-          value: newErrorText,
-          children: [],
-          parent: root
-        }
-        root.children.push(newCursor)
-        cursor = newCursor
-        yield renderError()
-        break
-      }
-      let cursorText = text(cursor)
-      let cursorPrefix = subtractRight(cursorText, cursor.value)
-
-      if (newErrorText.startsWith(cursorPrefix)) {
-        let newErrorValue = subtractLeft(newErrorText, cursorPrefix)
-        let newPrefix = common(cursor.value, newErrorValue)
-        if (newPrefix === "'") newPrefix = ""
-
-        if (newPrefix === "") {
-          let cursorSibling: Node = {
-            value: newErrorValue,
-            children: [],
-            parent: cursor.parent
-          }
-          cursor.parent!.children.push(cursorSibling)
-          cursor = cursorSibling
-          yield renderError()
-          break
-        }
-
-        let newCursor: Node = {
-          value: newPrefix,
-          children: [{
-            value: subtractLeft(cursor.value, newPrefix),
-            children: cursor.children,
-            get parent() { return newCursor }
-          }, {
-            value: subtractLeft(newErrorValue, newPrefix),
-            children: [],
-            get parent() { return newCursor }
-          }],
-          parent: cursor.parent
-        }
-        cursor.parent!.children.splice(-1, 1, newCursor)
-        cursor = newCursor.children[1]!
-        yield renderError()
-        break
-      }
-      cursor = cursor.parent!
-      continue
-    }
-  }
-
-  function text(node: Node): string {
-    return (node.parent ? text(node.parent) : "") + node.value
-  }
-  function subtractRight(a: string, b: string) {
-    return a.slice(0, a.length - b.length)
-  }
-  function subtractLeft(a: string, b: string) {
-    return a.slice(b.length)
-  }
-  function common(a: string, b: string): string {
-    if (a.length > b.length) return common(b, a)
-    while (true) {
-      if (b.startsWith(a)) {
-        if (a.lastIndexOf(" ") === -1) return a
-        return a.slice(0, a.lastIndexOf(" ") + 1)
-      }
-      a = a.slice(0, -1)
-    }
-  }
-  function renderError() {
-    return { type: "error" as "error", value: render(root!) }
-  }
-  function render(node: Node): string {
-    if (node === root) return node.children.map(render).join("\n")
-    if (node.children.length === 0) return node.value.trimEnd()
-    return node.value.trimEnd() + "\n" + node.children.map(n => indent("  ", render(n))).join("\n")
-  }
-  function indent(i: string, a: string) {
-    return a.split("\n").map(a => i + a).join("\n")
-  }
-}
-
-const accumulateErrors = accumulateErrorsImpl as unknown as AccumulateErrors
 
 
 
