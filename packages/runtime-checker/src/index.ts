@@ -466,11 +466,11 @@ type TupleImpl =
   (ps: (Parser<_T> | [Parser<_T>, "?"])[]) => Parser<unknown[] & Record<string, _T>>
 
 const tupleImpl: TupleImpl = ps => function*(a: unknown) {
-    let eP: string = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
-    if (!Array.isArray(a)) {
-      yield { type: "error", value: eP + "is not an array" }
-      return
-    }
+  let eP: string = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
+  if (!Array.isArray(a)) {
+    yield { type: "error", value: eP + "is not an array" }
+    return
+  }
   let minLength = ps.filter(p => !Array.isArray(p)).length
   let maxLength = ps.length
   if (a.length < minLength) {
