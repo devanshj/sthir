@@ -793,6 +793,10 @@ const bindLazy =
         get: () => {
           if (!p) p = f()
           return p.typeName
+        },
+        set: v => {
+          if (!p) p = f()
+          p.typeName = v
         }
       }
     ) as P
