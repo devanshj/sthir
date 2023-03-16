@@ -378,9 +378,11 @@ const objectImpl: ObjectImpl = ps => function*(a) {
     yield { type: "error", value: eP + "is not an object" }
     return
   }
+  let hasRequiredKeys = true
   for (let k in ps) {
     if (k.endsWith("?") && !k.endsWith("\\?")) continue
     if (!(k in a)) {
+      hasRequiredKeys = false
       yield { type: "error", value: eP + `is missing key '${k.replace(/\\\?$/, "?")}'` }
     }
   }
@@ -401,7 +403,10 @@ const objectImpl: ObjectImpl = ps => function*(a) {
       }
     }
   })(undefined)) {
-    if (y?.type === "ok") { yield { type: "ok", value: a as Record<string, _T> }; continue }
+    if (y?.type === "ok") {
+      if (hasRequiredKeys) yield { type: "ok", value: a as Record<string, _T> }
+      continue
+    }
     yield y
   }
 }
