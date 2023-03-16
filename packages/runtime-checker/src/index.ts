@@ -187,11 +187,16 @@ const intersect = intersectImpl as unknown as IntersectR
 
 type UnionR =
   { <Ps extends UnknownParser[]>
-    (constituents: [...Ps]):
+    (constituents: [...Ps], options?: UnionOptions):
     Union<Ps>
   , <Ps extends Iterable<UnknownParser>>
-    (constituents: Ps):
+    (constituents: Ps, options?: UnionOptions):
       UnionIterable<Ps>
+  , defaultOptions: Required<UnionOptions>
+  }
+
+type UnionOptions =
+  { maxErrorTries?: number
   }
 
 type Union<Ps extends UnknownParser[]> =
@@ -229,13 +234,15 @@ type TestL171 =
   >>
 
 type UnionImpl =
-  (ps: Iterable<Parser<_T>>) => Parser<_T>
+  (ps: Iterable<Parser<_T>>, options?: UnionOptions) => Parser<_T>
 
-let unionImpl: UnionImpl = ps => function*(a) {
+let unionImpl: UnionImpl = (ps, _options) => function*(a) {
+  let options = { ...union.defaultOptions, ..._options }
   let eP = `is not of type '${(this as ParserThis)?.typeName ?? "<unnamed>"}' as it `
   let gs = [] as ReturnType<Parser<_T>>[]
   let bestI = undefined as number | undefined
   let someOk = false
+  let es = [] as number[]
   let ss = [] as number[]
   let yss = [] as ParserYield<_T>[][]
   let irs = [] as number[]
@@ -245,11 +252,14 @@ let unionImpl: UnionImpl = ps => function*(a) {
     let i = -1
     for (let p of ps) { i++
       if (irs.includes(i)) continue;
-      let g = gs[i] ?? (g => (gs[i] = g, ss[i] = 0, yss[i] = [], g))(p(a))
+      let g = gs[i] ?? (g => (gs[i] = g, ss[i] = 0, es[i] = 0, yss[i] = [], g))(p(a))
       let y = g.next().value
       yss[i]!.push(y)
       if (!y) { irs.push(i); continue }
-      if (y.type === "error") { irs.push(i); continue }
+      if (y.type === "error") {
+        es[i]++
+        if (es[i]! >= options.maxErrorTries) irs.push(i); continue
+      }
       if (y.type === "innerOk") { ss[i]++; continue }
       if (y.type === "ok") { bestI = i; someOk = true; break root }
       assertNever(y)
@@ -274,7 +284,7 @@ let unionImpl: UnionImpl = ps => function*(a) {
       yield* gs[bestI!]!
     }
   } else {
-    eP += `did not match any contituents, best match was '${bestP!.typeName ?? "<unnamed>"}' but`
+    eP += `did not match any contituents, best match probably was '${bestP!.typeName ?? "<unnamed>"}' but`
     yield* bestYs.map((y): ParserYield<_T> => {
       if (y?.type === "error") {
         return {
@@ -296,6 +306,7 @@ let unionImpl: UnionImpl = ps => function*(a) {
   }
 }
 const union = unionImpl as unknown as UnionR
+union.defaultOptions = { maxErrorTries: 5 }
 
 
 

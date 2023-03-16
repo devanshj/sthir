@@ -1,7 +1,6 @@
 import * as t from "../src/index"
 
-it("works", () => {
-
+test("basic", () => {
   let tMouseEvent = t.bindLazy(() => t.name(
     "MouseEvent",
     t => { type MouseEvent = typeof t | never; return {} as MouseEvent },
@@ -46,33 +45,56 @@ it("works", () => {
   const isPositive = Symbol("isPositive")
   interface Positive { [isPositive]: true }
 
-  
-  expect(errors(tMouseEvent, { x: 10.5, y: -20.5 }).map((a, i) => `${i + 1}.\n${a}`).join("\n\n")).toMatchInlineSnapshot(`
-    "1.
-    is not of type 'MouseEvent' as it did not match any contituents, best match was 'MouseDownEvent' but it is missing key 'type'
 
-    2.
-    is not of type 'MouseEvent' as it did not match any contituents, best match was 'MouseDownEvent' but
-      it is missing key 'type'
-      it's value at key 'x' is not of type 'Integer'
-
-    3.
-    is not of type 'MouseEvent' as it did not match any contituents, best match was 'MouseDownEvent' but
-      it is missing key 'type'
-      it's value at key
-        'x' is not of type 'Integer'
-        'y' is not of type 'Integer'
-
-    4.
-    is not of type 'MouseEvent' as it did not match any contituents, best match was 'MouseDownEvent' but
-      it is missing key 'type'
-      it's value at key
-        'x' is not of type 'Integer'
-        'y' is not of type
-          'Integer'
-          'Positive'"
+  expect([...tMouseEvent({ x: 10.5, y: -20.5 })]).toMatchInlineSnapshot(`
+    [
+      {
+        "type": "error",
+        "value": "is not of type 'MouseEvent' as it did not match any contituents, best match probably was 'MouseDownEvent' but it is missing key 'type'",
+      },
+      {
+        "type": "error",
+        "value": "is not of type 'MouseEvent' as it did not match any contituents, best match probably was 'MouseDownEvent' but it's value at key 'x' is not of type 'Integer'",
+      },
+      {
+        "type": "error",
+        "value": "is not of type 'MouseEvent' as it did not match any contituents, best match probably was 'MouseDownEvent' but it's value at key 'y' is not of type 'Integer'",
+      },
+      {
+        "type": "innerOk",
+      },
+      {
+        "type": "error",
+        "value": "is not of type 'MouseEvent' as it did not match any contituents, best match probably was 'MouseDownEvent' but it's value at key 'y' is not of type 'Positive'",
+      },
+      undefined,
+    ]
   `)
 })
 
-const errors = <T extends t.UnknownParser>(p: T, a: t.Parsee<T>) =>
-  [...t.accumulateErrors(p)(a as never)].flatMap(y => y && y.type === "error" ? [y.value] : [])
+test("union best match", () => {
+  const tEvent = t.name("Event", t.union([
+    t.name("ClickEvent", t.object({
+      type: t.value("click"),
+      x: t.number,
+      y: t.number
+    })),
+    t.name("KeypressEvent", t.object({
+      type: t.value("keypress"),
+      code: t.number
+    }))
+  ]))
+
+  expect([...tEvent({ code: 13 })]).toMatchInlineSnapshot(`
+    [
+      {
+        "type": "error",
+        "value": "is not of type 'Event' as it did not match any contituents, best match probably was 'KeypressEvent' but it is missing key 'type'",
+      },
+      {
+        "type": "innerOk",
+      },
+      undefined,
+    ]
+  `)
+})
