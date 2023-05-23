@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "ESNext",
+    "module": "NodeNext",
     "esModuleInterop": true,
     "strict": true,
     "noImplicitAny": true,
     "exactOptionalPropertyTypes": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": true
   }
 }
