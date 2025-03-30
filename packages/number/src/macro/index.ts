@@ -48,7 +48,7 @@ export default createMacro(({ references, babel: { types: bt, parse, traverse } 
   // extras
 
   const parseExpression = (code: string) => {
-    let file = parse(code) as bt.File
+    let file = parse(code, { filename: "temp.js" }) as bt.File
     return (file.program.body[0]! as bt.ExpressionStatement).expression
   }
 

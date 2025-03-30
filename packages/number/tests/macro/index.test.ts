@@ -3,7 +3,7 @@ import macros from "babel-plugin-macros"
 
 tester({
   plugin: macros,
-  formatResult: undefined,
+  formatResult: a => a,
   pluginName: "@sthir/number/macro",
   tests: {
     "works": {

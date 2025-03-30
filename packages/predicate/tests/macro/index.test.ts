@@ -3,12 +3,12 @@ import macros from "babel-plugin-macros"
 
 tester({
   plugin: macros,
-  formatResult: undefined,
-  pluginName: "./predicate/src/macro",
+  formatResult: a => a,
+  pluginName: "@sthir/predicate/macro",
   tests: {
     "index, typeof, ===": {
       code: `
-        import { p, pa } from "./predicate/src/macro";
+        import { p, pa } from "@sthir/predicate/macro";
 
         pa(x, p(".a?.b typeof ===", y));
       `,
@@ -18,7 +18,7 @@ tester({
     },
     "no operators": {
       code: `
-        import { p, pa } from "./predicate/src/macro";
+        import { p, pa } from "@sthir/predicate/macro";
 
         pa(x, p("===", y));
       `,
@@ -28,7 +28,7 @@ tester({
     },
     "truthy": {
       code: `
-        import { p, pa } from "./predicate/src/macro";
+        import { p, pa } from "@sthir/predicate/macro";
 
         pa(x, p());
       `,
@@ -38,7 +38,7 @@ tester({
     },
     "&": {
       code: `
-        import { p, pa } from "./predicate/src/macro";
+        import { p, pa } from "@sthir/predicate/macro";
 
         pa(x, p(\`typeof &\${(() => y)()} ===\`, z));
       `,
@@ -48,7 +48,7 @@ tester({
     },
     "pt": {
       code: `
-        import { pa, pm } from "./predicate/src/macro";
+        import { pa, pm } from "@sthir/predicate/macro";
 
         pa(x, pm(x => typeof x === "string" ? [x] : []))
       `,

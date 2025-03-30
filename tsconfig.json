@@ -7,5 +7,7 @@
     "noImplicitAny": true,
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true
   }
 }

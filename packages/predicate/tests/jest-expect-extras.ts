@@ -6,8 +6,16 @@ expect.extend({
     )) {
       return { pass: false, message: () => `expected an array of strings or numbers only` }
     }
-    this.equals(received.slice().sort(), expected.slice().sort())
-    return { pass: true, message: () => "expected both sets to be equal" }
+    
+    if (!this.equals(received.slice().sort(), expected.slice().sort())) {
+      return {
+        pass: false,
+        message:
+          () => `expected both sets to be equal\n\nExpected: ${JSON.stringify(expected)}\nReceived: ${JSON.stringify(received)}`
+      }
+    }
+
+    return { pass: true, message: () => "" }
   }
 })
 

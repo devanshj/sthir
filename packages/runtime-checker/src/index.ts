@@ -257,10 +257,10 @@ let unionImpl: UnionImpl = (ps, _options) => function*(a) {
       yss[i]!.push(y)
       if (!y) { irs.push(i); continue }
       if (y.type === "error") {
-        es[i]++
+        es[i]!++
         if (es[i]! >= options.maxErrorTries) irs.push(i); continue
       }
-      if (y.type === "innerOk") { ss[i]++; continue }
+      if (y.type === "innerOk") { ss[i]!++; continue }
       if (y.type === "ok") { bestI = i; someOk = true; break root }
       assertNever(y)
     }
@@ -603,7 +603,8 @@ type Array =
     ParserAsserted<Parsed<P>[], unknown extends Parsee<P> ? unknown : Parsee<P>[]>
 
 type ArrayImpl = 
-  (p: Parser<_T>) => Parser<unknown[] & Record<number, _T>>
+  (p: Parser<_T>) => Parser</*unknown[] & */ Record<number, _T>>
+// adding `unknown[] & ` breaks in TS 5.7.2 but used to work in TS 4.8.0-beta
 
 const arrayImpl: ArrayImpl = p => then(
   function*(a: unknown) {
