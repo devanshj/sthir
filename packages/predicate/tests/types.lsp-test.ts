@@ -1,6 +1,6 @@
 import { p, pa } from "../src"
 import * as N from "@sthir/number"
-import "./jest-expect-extras"
+import "./vitest-expect-extras"
 
 test("index index typeof === value", () => {
   let x = {} as { a: { b: number }, z: string } | { c: string } | string

@@ -10,7 +10,7 @@
     "moduleResolution": "node",
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["jest", "node"]
+    "types": ["vitest/globals", "node"]
   },
   "include": ["packages/**/*", "lsp-tester/**/*.d.ts"]
 }

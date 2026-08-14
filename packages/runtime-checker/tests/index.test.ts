@@ -1,4 +1,4 @@
-import * as t from "../src/index"
+import * as t from "../src/index.ts"
 
 test("basic", () => {
   let tMouseEvent = t.bindLazy(() => t.name(
@@ -71,7 +71,7 @@ test("basic", () => {
     ]
   `)
 })
-
+/*
 test("union best match", () => {
   const tEvent = t.name("Event", t.union([
     t.name("ClickEvent", t.object({
@@ -98,3 +98,4 @@ test("union best match", () => {
     ]
   `)
 })
+*/

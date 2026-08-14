@@ -21,13 +21,9 @@
   },
   "scripts": {
     "pretest": "node ../../lsp-tester/generate.js tests/types.lsp-test.ts",
-    "test": "jest",
+    "test": "vitest run",
     "build": "cd ../../ && preconstruct build",
     "postbuild": "node fix-macro-dts"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

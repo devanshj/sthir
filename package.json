@@ -12,13 +12,9 @@
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-typescript": "^7.27.0",
     "@preconstruct/cli": "^2.8.12",
-    "@types/jest": "^29.5.14",
     "@types/node": "^22.13.14",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.3.0",
-    "ts-node": "^10.9.2",
-    "@typescript/native": "npm:typescript@^7.0.2",
-    "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "preconstruct": {
     "packages": [
@@ -26,6 +22,8 @@
     ]
   },
   "scripts": {
-    "postinstall": "preconstruct dev"
+    "postinstall": "preconstruct dev",
+    "test": "yarn workspaces run test",
+    "test:watch": "vitest"
   }
 }

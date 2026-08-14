@@ -15,18 +15,17 @@ Writes `types.test.ts` next to the source file (strips `lsp-` from the basename)
 - `// ^|` on the line below code — completions at the column of `^` on the line above
 - `// ^?` on the line below code — hover/quickinfo at the column of `^` on the line above
 
-`query()` is declared globally in `lsp-test-globals.d.ts` (like Jest's `test` / `expect`) so `*.lsp-test.ts` files typecheck in the editor without imports.
+`query()` is declared globally in `lsp-test-globals.d.ts` (like Vitest's `test` / `expect`) so `*.lsp-test.ts` files typecheck in the editor without imports.
 
 Completion results are filtered by the string-literal prefix at each `^|` marker, matching what editors show in the completion menu.
 
 ## Requirements
 
-- TypeScript 7 (`@typescript/native` provides `tsc --lsp --stdio`)
+- TypeScript 7 (`typescript` provides `tsc --lsp --stdio`)
 - Test file imports must resolve from disk (temp file is written alongside the test)
 
-The generator prepends `declare const global/expect/test` shims (same as twoslash) so Jest globals don't pollute completions.
+The generator prepends `declare const global/expect/test` shims (same as twoslash) so Vitest globals don't pollute completions.
 
 ## TypeScript versions
 
-- **LSP queries** use TypeScript 7 via `@typescript/native`
-- **Jest/ts-jest** use `@typescript/typescript6` (the `typescript` package alias) since TS 7 has no compiler API yet
+- **LSP queries** use TypeScript 7 via the root `typescript` dependency

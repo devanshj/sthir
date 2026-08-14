@@ -1,6 +1,7 @@
 {
   "name": "@sthir/runtime-checker",
   "version": "0.8.0",
+  "type": "module",
   "description": "Parsers to perform runtime type checking",
   "main": "dist/sthir-runtime-checker.cjs.js",
   "module": "dist/sthir-runtime-checker.esm.js",
@@ -19,15 +20,7 @@
     "url": "git+https://github.com/devanshj/sthir.git"
   },
   "scripts": {
-    "test": "jest",
+    "test": "vitest run",
     "build": "cd ../../ && preconstruct build"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "prettierPath": "",
-    "snapshotFormat": {
-      "printBasicPrototype": false
-    }
   }
 }

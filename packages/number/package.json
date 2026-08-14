@@ -22,11 +22,7 @@
   "scripts": {
     "build": "cd ../../ && preconstruct build",
     "postbuild": "node fix-macro-dts",
-    "test": "jest"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

@@ -6,10 +6,7 @@
 // - ok and innerOk with score
 
 export {
-  Parser,
-
   name_ as name,
-  N,
   is,
   assert,
 
@@ -35,9 +32,6 @@ export {
   predicate,
 
   bindLazy,
-  UnknownParser,
-  Parsed,
-  Parsee,
 }
 
 
@@ -831,3 +825,5 @@ type AreEqual<A, B> =
   (<T>() => T extends B ? 1 : 0) extends (<T>() => T extends A ? 1 : 0)
     ? true
     : false
+
+export type { Parser, N, UnknownParser, Parsed, Parsee }
