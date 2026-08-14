@@ -8,6 +8,9 @@
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "moduleResolution": "node",
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["jest", "node"]
+  },
+  "include": ["packages/**/*", "lsp-tester/**/*.d.ts"]
 }

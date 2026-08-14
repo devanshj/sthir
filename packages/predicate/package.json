@@ -20,7 +20,7 @@
     "url": "git+https://github.com/devanshj/sthir.git"
   },
   "scripts": {
-    "pretest": "node ../../twoslash-tester/generate tests/types.twoslash-test.ts",
+    "pretest": "node ../../lsp-tester/generate.js tests/types.lsp-test.ts",
     "test": "jest",
     "build": "cd ../../ && preconstruct build",
     "postbuild": "node fix-macro-dts"

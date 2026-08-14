@@ -2,9 +2,6 @@ import { p, pa } from "../src"
 import * as N from "@sthir/number"
 import "./jest-expect-extras"
 
-const query = () => 
-  ((global as any).twoSlashQueries.shift()) as { completions: string[], text: string }
-
 test("index index typeof === value", () => {
   let x = {} as { a: { b: number }, z: string } | { c: string } | string
 
