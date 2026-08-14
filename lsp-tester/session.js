@@ -30,7 +30,7 @@ function formatHoverContents(contents) {
 async function createTs7Session(repoRoot) {
   const tsc =
     [
-      path.resolve(repoRoot, "node_modules/typescript/bin/tsc"),
+      path.resolve(repoRoot, "node_modules/@typescript/native/bin/tsc"),
       path.resolve(repoRoot, "node_modules/.bin/tsc"),
     ].find((p) => require("fs").existsSync(p)) ??
     path.resolve(repoRoot, "node_modules/.bin/tsc")
