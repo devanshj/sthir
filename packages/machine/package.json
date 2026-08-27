@@ -1,0 +1,36 @@
+{
+  "name": "@sthir/machine",
+  "version": "0.0.1",
+  "description": "A state machine",
+  "main": "dist/sthir-machine.cjs.js",
+  "module": "dist/sthir-machine.esm.js",
+  "sideEffects": false,
+  "preconstruct": {
+    "entrypoints": [
+      "index.ts"
+    ]
+  },
+  "devDependencies": {},
+  "author": {
+    "name": "Devansh Jethmalani",
+    "email": "jethmalani.devansh@gmail.com"
+  },
+  "license": "MIT",
+  "readme": "https://github.com/devanshj/sthir/tree/main/packages/machine/README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devanshj/sthir.git"
+  },
+  "scripts": {
+    "test": "tsc && node ../../lsp-tester/generate.js tests/types.lsp-test.ts && vitest run",
+    "build": "cd ../../ && preconstruct build"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "prettierPath": "",
+    "snapshotFormat": {
+      "printBasicPrototype": false
+    }
+  }
+}

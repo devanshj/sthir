@@ -9,7 +9,6 @@ const { filterCompletions } = require("./filter-completions")
 
 const testFile = path.resolve(process.cwd(), process.argv[2])
 const repoRoot = path.resolve(__dirname, "..")
-const tempFileName = ".lsp-temp.ts"
 
 const lspPrefix = [
   "declare const global: any",
@@ -33,12 +32,10 @@ async function generate() {
     line: q.line + lspPrefixLines,
   }))
   const testDir = path.dirname(testFile)
-  const tempFile = path.join(testDir, tempFileName)
-  await fs.writeFile(tempFile, lspSource)
+  const lspLines = lspSource.split(EOL)
 
   const session = await createTs7Session(repoRoot)
-  const uri = await session.openDocument(tempFile, lspSource)
-  const lspLines = lspSource.split(EOL)
+  const uri = await session.openDocument(testFile, lspSource)
 
   /** @type {{ text?: string, completions?: string[] }[]} */
   const results = []
@@ -58,7 +55,6 @@ async function generate() {
   }
 
   session.shutdown()
-  await fs.unlink(tempFile)
 
   let resultIndex = 0
   const body = source.replace(

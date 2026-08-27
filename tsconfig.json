@@ -7,7 +7,6 @@
     "noImplicitAny": true,
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
-    "moduleResolution": "node",
     "skipLibCheck": true,
     "noEmit": true,
     "types": ["vitest/globals", "node"]

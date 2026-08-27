@@ -22,7 +22,7 @@ Completion results are filtered by the string-literal prefix at each `^|` marker
 ## Requirements
 
 - TypeScript 7 (`typescript` provides `tsc --lsp --stdio`)
-- Test file imports must resolve from disk (temp file is written alongside the test)
+- Test file imports must resolve from disk (the generator opens the real `*.lsp-test.ts` path via LSP, not a temp copy)
 
 The generator prepends `declare const global/expect/test` shims (same as twoslash) so Vitest globals don't pollute completions.
 

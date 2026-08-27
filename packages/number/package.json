@@ -22,7 +22,7 @@
   "scripts": {
     "build": "cd ../../ && preconstruct build",
     "postbuild": "node fix-macro-dts",
-    "test": "vitest run"
+    "test": "tsc && vitest run"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

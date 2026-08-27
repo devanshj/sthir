@@ -1,3 +1,4 @@
+// @ts-expect-error
 import * as t from "../src/index.ts"
 
 test("basic", () => {

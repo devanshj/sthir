@@ -20,7 +20,7 @@
     "url": "git+https://github.com/devanshj/sthir.git"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "tsc && vitest run",
     "build": "cd ../../ && preconstruct build"
   }
 }
