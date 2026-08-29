@@ -801,7 +801,7 @@ test("comment machine", () => {
           POST_SUCCESS: ({ event }) => ({ target: "posted", context: { id: event.id } }),
           POST_ERROR: ({ event }) => ({ target: "editing", context: { body: "", id: undefined, error: event.error } })
         },
-        effect: function ({ context, send }) {
+        effect: ({ context, send }) => {
           A.test(A.areEqual<typeof context, { body: NonEmptyString } | { body: NonEmptyString, test: boolean }>())
 
           postComment({ body: context.body })
