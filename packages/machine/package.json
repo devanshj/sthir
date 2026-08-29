@@ -1,6 +1,6 @@
 {
   "name": "@sthir/machine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A state machine",
   "main": "dist/sthir-machine.cjs.js",
   "module": "dist/sthir-machine.esm.js",
