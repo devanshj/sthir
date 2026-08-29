@@ -14,7 +14,7 @@ export type CreateType = <T>() => { [$$t]: T }
 export type Machine<D> =
   Machine.State<D> extends infer State
     ? & A.Instantiated<
-          { send: Machine.Send<D>
+          { send: Machine.UninstantiatedSend<D>
           , subscribe: (f: () => void) => () => void
           }>
       & ( State extends unknown
@@ -359,6 +359,9 @@ export namespace Machine {
 
   export type Send<D> =
     (sendable: Sendable<D>) => void
+
+  export type UninstantiatedSend<D> =
+    (sendable: A.Uninstantiated<Sendable<D>>) => void
 
   type SendImpl = (send: Sendable.Impl) => void
   export namespace Send {

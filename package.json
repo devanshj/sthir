@@ -13,13 +13,18 @@
     "@babel/preset-typescript": "^7.27.0",
     "@preconstruct/cli": "^2.8.13",
     "@types/node": "^22.13.14",
-    "@typescript/native": "file:../TypeScript/built/npm/typescript",
-    "@typescript/typescript-darwin-arm64": "file:../TypeScript/built/npm/typescript-darwin-arm64",
+    "@typescript/native": "npm:@sthir/typescript@7.1.0-dev.20260829.1",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^4.1.10"
   },
-  "resolutions": {
-    "@typescript/typescript-darwin-arm64": "file:../TypeScript/built/npm/typescript-darwin-arm64"
+  "optionalDependencies": {
+    "@typescript/typescript-win32-x64": "npm:@sthir/typescript-win32-x64@7.1.0-dev.20260829.1",
+    "@typescript/typescript-win32-arm64": "npm:@sthir/typescript-win32-arm64@7.1.0-dev.20260829.1",
+    "@typescript/typescript-linux-x64": "npm:@sthir/typescript-linux-x64@7.1.0-dev.20260829.1",
+    "@typescript/typescript-linux-arm": "npm:@sthir/typescript-linux-arm@7.1.0-dev.20260829.1",
+    "@typescript/typescript-linux-arm64": "npm:@sthir/typescript-linux-arm64@7.1.0-dev.20260829.1",
+    "@typescript/typescript-darwin-x64": "npm:@sthir/typescript-darwin-x64@7.1.0-dev.20260829.1",
+    "@typescript/typescript-darwin-arm64": "npm:@sthir/typescript-darwin-arm64@7.1.0-dev.20260829.1"
   },
   "preconstruct": {
     "packages": [

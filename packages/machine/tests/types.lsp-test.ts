@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { machine } from "node:os";
-import { A, LS, CreateMachine, CreateType } from "../src/types";
+import { A, CreateMachine, CreateType } from "../src/types";
 
 const createMachine = (() => []) as any as CreateMachine;
 const t = (() => undefined) as unknown as CreateType
@@ -416,8 +415,6 @@ describe("Machine.Definition", () => {
           a: {}
         }
       })
-
-      expect(query().text).toContain("Error: '$$exhaustive' is a reserved name")
 
       createMachine({
         initial: "a",

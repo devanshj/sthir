@@ -1329,6 +1329,41 @@
   resolved "https://registry.yarnpkg.com/@standard-schema/spec/-/spec-1.1.0.tgz#a79b55dbaf8604812f52d140b2c9ab41bc150bb8"
   integrity sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==
 
+"@sthir/typescript-darwin-arm64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-darwin-arm64/-/typescript-darwin-arm64-7.1.0-dev.20260829.1.tgz#d1a511dd229c881991136fef66c9d7281ec5615e"
+  integrity sha512-KVHxSzZQRPMKci2kRigL7gvVEUtHHXKg+rlfVLPAx4sxWeiHof6XQ9BrweNnJ800EKEjqAigCLQ56Ee2Y2gd3A==
+
+"@sthir/typescript-darwin-x64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-darwin-x64/-/typescript-darwin-x64-7.1.0-dev.20260829.1.tgz#8954d8c235b19972d7e1f3931cd8e27ad4a2a859"
+  integrity sha512-dDoLq0HEPgou0WgnGXWswfsTfgQ2y8NRYS4ap3QDxRDl6cVEZCMyHFXnS2QVPNotBpCr/h4qpDIrMEBKifwTPA==
+
+"@sthir/typescript-linux-arm64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-linux-arm64/-/typescript-linux-arm64-7.1.0-dev.20260829.1.tgz#1048f75135c1136f62c788aa83585ef1ee5d5742"
+  integrity sha512-ieMg8y8dcr73bGUO4OxoFZmMwZglcM13Rh/qUPxFKxlz/CNFKtluwSoDvSI+TDC4vjyBmeAJjYsxOzyn3j9cWQ==
+
+"@sthir/typescript-linux-arm@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-linux-arm/-/typescript-linux-arm-7.1.0-dev.20260829.1.tgz#5bf9729518a5866e9548771355a5f096c42ec55e"
+  integrity sha512-KBZbXe4bbf2m7KaNxeRq7ZBBkBWeUHk0hwGJYHulOzkr3Or/1aANYQ+mIHsgxFe1k4N75evuSLzx3KxvUAD9Sg==
+
+"@sthir/typescript-linux-x64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-linux-x64/-/typescript-linux-x64-7.1.0-dev.20260829.1.tgz#e6e20785bb83ef90cdafb90ed54dbb3b7a417aeb"
+  integrity sha512-WRQlZGc3Qox9Mc/TU/RUVPHJn+63Vxa7QuRRpzO37zHeOLDCvYllQf+s6WPVX/UVc9I/h/+KJ+3IODGWEYuANg==
+
+"@sthir/typescript-win32-arm64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-win32-arm64/-/typescript-win32-arm64-7.1.0-dev.20260829.1.tgz#9c285a407f5c790771fb7c4c43f020e4dadfb87f"
+  integrity sha512-njuqpBAnkwqjjw9ZzsQEK9D2c6OMbShKh/Uy6tn0EEEvxTBXLXfe76Tnd//P1CM+4eI9rWb0b1t8r4pKfSUoew==
+
+"@sthir/typescript-win32-x64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-win32-x64/-/typescript-win32-x64-7.1.0-dev.20260829.1.tgz#d361e571866f472b5728553c2cf0c6a856337c4c"
+  integrity sha512-HqoFw7K8vviS01BFgHLiEfsFTSrvE3/K/z10L3mhd3lE2brB1KJMsFToVbAtddOJuogy8dv/71+lM10o+kvz3w==
+
 "@types/babel-plugin-macros@^3.1.3":
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/@types/babel-plugin-macros/-/babel-plugin-macros-3.1.3.tgz#422f78c7c9eed90a4e6c1c65597d5646fae953fb"
@@ -1421,18 +1456,58 @@
   dependencies:
     "@types/node" "*"
 
-"@typescript/native@file:../TypeScript/built/npm/typescript":
-  version "7.1.0-dev"
+"@typescript/native@npm:@sthir/typescript@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript/-/typescript-7.1.0-dev.20260829.1.tgz#fd995015438f8197fee1e660d94060c7c9e19f0b"
+  integrity sha512-+9W5gDzuqYYR+p2z9TcVXmuoo2vNfpGAtp2prv888CH1wNxR2OFk34FWZFEDmr4zxCCFH2YBYP/mkBpSvaFeaA==
   optionalDependencies:
-    "@typescript/typescript-darwin-arm64" "7.1.0-dev"
+    "@sthir/typescript-darwin-arm64" "7.1.0-dev.20260829.1"
+    "@sthir/typescript-darwin-x64" "7.1.0-dev.20260829.1"
+    "@sthir/typescript-linux-arm" "7.1.0-dev.20260829.1"
+    "@sthir/typescript-linux-arm64" "7.1.0-dev.20260829.1"
+    "@sthir/typescript-linux-x64" "7.1.0-dev.20260829.1"
+    "@sthir/typescript-win32-arm64" "7.1.0-dev.20260829.1"
+    "@sthir/typescript-win32-x64" "7.1.0-dev.20260829.1"
 
 "@typescript/old@npm:typescript@^6":
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-6.0.3.tgz#90251dc007916e972786cb94d74d15b185577d21"
   integrity sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==
 
-"@typescript/typescript-darwin-arm64@7.1.0-dev", "@typescript/typescript-darwin-arm64@file:../TypeScript/built/npm/typescript-darwin-arm64":
-  version "7.1.0-dev"
+"@typescript/typescript-darwin-arm64@npm:@sthir/typescript-darwin-arm64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-darwin-arm64/-/typescript-darwin-arm64-7.1.0-dev.20260829.1.tgz#d1a511dd229c881991136fef66c9d7281ec5615e"
+  integrity sha512-KVHxSzZQRPMKci2kRigL7gvVEUtHHXKg+rlfVLPAx4sxWeiHof6XQ9BrweNnJ800EKEjqAigCLQ56Ee2Y2gd3A==
+
+"@typescript/typescript-darwin-x64@npm:@sthir/typescript-darwin-x64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-darwin-x64/-/typescript-darwin-x64-7.1.0-dev.20260829.1.tgz#8954d8c235b19972d7e1f3931cd8e27ad4a2a859"
+  integrity sha512-dDoLq0HEPgou0WgnGXWswfsTfgQ2y8NRYS4ap3QDxRDl6cVEZCMyHFXnS2QVPNotBpCr/h4qpDIrMEBKifwTPA==
+
+"@typescript/typescript-linux-arm64@npm:@sthir/typescript-linux-arm64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-linux-arm64/-/typescript-linux-arm64-7.1.0-dev.20260829.1.tgz#1048f75135c1136f62c788aa83585ef1ee5d5742"
+  integrity sha512-ieMg8y8dcr73bGUO4OxoFZmMwZglcM13Rh/qUPxFKxlz/CNFKtluwSoDvSI+TDC4vjyBmeAJjYsxOzyn3j9cWQ==
+
+"@typescript/typescript-linux-arm@npm:@sthir/typescript-linux-arm@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-linux-arm/-/typescript-linux-arm-7.1.0-dev.20260829.1.tgz#5bf9729518a5866e9548771355a5f096c42ec55e"
+  integrity sha512-KBZbXe4bbf2m7KaNxeRq7ZBBkBWeUHk0hwGJYHulOzkr3Or/1aANYQ+mIHsgxFe1k4N75evuSLzx3KxvUAD9Sg==
+
+"@typescript/typescript-linux-x64@npm:@sthir/typescript-linux-x64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-linux-x64/-/typescript-linux-x64-7.1.0-dev.20260829.1.tgz#e6e20785bb83ef90cdafb90ed54dbb3b7a417aeb"
+  integrity sha512-WRQlZGc3Qox9Mc/TU/RUVPHJn+63Vxa7QuRRpzO37zHeOLDCvYllQf+s6WPVX/UVc9I/h/+KJ+3IODGWEYuANg==
+
+"@typescript/typescript-win32-arm64@npm:@sthir/typescript-win32-arm64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-win32-arm64/-/typescript-win32-arm64-7.1.0-dev.20260829.1.tgz#9c285a407f5c790771fb7c4c43f020e4dadfb87f"
+  integrity sha512-njuqpBAnkwqjjw9ZzsQEK9D2c6OMbShKh/Uy6tn0EEEvxTBXLXfe76Tnd//P1CM+4eI9rWb0b1t8r4pKfSUoew==
+
+"@typescript/typescript-win32-x64@npm:@sthir/typescript-win32-x64@7.1.0-dev.20260829.1":
+  version "7.1.0-dev.20260829.1"
+  resolved "https://registry.yarnpkg.com/@sthir/typescript-win32-x64/-/typescript-win32-x64-7.1.0-dev.20260829.1.tgz#d361e571866f472b5728553c2cf0c6a856337c4c"
+  integrity sha512-HqoFw7K8vviS01BFgHLiEfsFTSrvE3/K/z10L3mhd3lE2brB1KJMsFToVbAtddOJuogy8dv/71+lM10o+kvz3w==
 
 "@vitest/expect@4.1.10":
   version "4.1.10"
