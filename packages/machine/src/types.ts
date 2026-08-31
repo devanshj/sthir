@@ -334,11 +334,20 @@ export namespace Machine {
       >
 
   export type ExitEventForState<D, State> =
-    U.Extract<
+    | { type: Definition.StopEventType }
+    | U.Extract<
       Event<D>,
       { type:
-          | keyof A.Get<D, ["states", State, "on"], {}>
-          | Definition.StopEventType
+          | O.Value<{
+              [E in keyof A.Get<D, ["states", State, "on"]>]:
+                Machine.Definition.DesugarTransition<A.Get<D, ["states", State, "on", E]>> extends (...a: never) => infer T
+                  ? T extends unknown
+                      ? A.Get<T, "target"> extends State | undefined
+                          ? never
+                          : E
+                      : never
+                  : never
+            }>
       }
     >
 

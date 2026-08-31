@@ -572,7 +572,8 @@ describe("Machine.Definition", () => {
         },
         b: {
           on: {
-            Y: "a"
+            Y: "a",
+            Z: "b",
           },
           effect: function (effectParameter) {
 
@@ -582,6 +583,7 @@ describe("Machine.Definition", () => {
               A.test(A.areEqual<
                 typeof effectParameter.event,
                 | { type: "X", foo: number }
+                | { type: "Z", baz: string }
               >())
             })
 
