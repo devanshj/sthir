@@ -21,6 +21,7 @@ export type Machine<D> =
           ? A.Instantiated<
               { state: State
               , context: A.Uninstantiated<Machine.ContextForState<D, State>>
+              , sendT: Machine.UninstantiatedSendForState<D, State>
               }>
           : never
         )
@@ -30,6 +31,7 @@ interface MachineImpl
   { state: Machine.State.Impl
   , context: Machine.Context.Impl
   , send: Machine.Send.Impl
+  , sendT: Machine.Send.Impl
   , subscribe: (f: () => void) => () => void
   }
 
@@ -159,6 +161,7 @@ export namespace Machine {
             { event: A.Uninstantiated<Machine.EntryEventForState<D, State>>
             , context: A.Uninstantiated<Machine.ContextForState<D, State>>
             , send: A.Uninstantiated<Machine.Send<D>>
+            , sendT: A.Uninstantiated<Machine.SendForState<D, State>>
             }
           >
       ) =>
@@ -169,6 +172,7 @@ export namespace Machine {
                     { event: A.Uninstantiated<Machine.ExitEventForState<D, State>>
                     , context: A.Uninstantiated<Machine.ContextForState<D, State>>
                     , send: A.Uninstantiated<Machine.Send<D>>
+                    , sendT: A.Uninstantiated<Machine.SendForState<D, State>>
                     }
                   >
               ) =>
@@ -176,10 +180,10 @@ export namespace Machine {
             )
 
     type EffectImpl =
-      (parameter: { event: Machine.Event.Impl, context: Machine.Context.Impl, send: Machine.Send.Impl }) =>
+      (parameter: { event: Machine.Event.Impl, context: Machine.Context.Impl, send: Machine.Send.Impl, sendT: Machine.Send.Impl }) =>
         | void
         | (
-            (cleanupParameter: { event: Machine.Event.Impl, context: Machine.Context.Impl, send: Machine.Send.Impl }) =>
+            (cleanupParameter: { event: Machine.Event.Impl, context: Machine.Context.Impl, send: Machine.Send.Impl, sendT: Machine.Send.Impl }) =>
               void
           )
 
@@ -350,8 +354,14 @@ export namespace Machine {
             }>
       }
     >
+  
+  export type AcceptableEventForState<D, State> =
+    U.Extract<
+      Event<D>,
+      { type: keyof A.Get<D, ["states", State, "on"]> }
+    >
 
-  export type Sendable<D, E = Event<D>> =
+  export type Sendable<E> =
     | ( E extends unknown
           ? { type: A.Get<E, "type"> } extends E
               ? A.Get<E, "type">
@@ -367,10 +377,16 @@ export namespace Machine {
   }
 
   export type Send<D> =
-    (sendable: Sendable<D>) => void
+    (sendable: Sendable<Event<D>>) => void
 
   export type UninstantiatedSend<D> =
-    (sendable: A.Uninstantiated<Sendable<D>>) => void
+    (sendable: A.Uninstantiated<Sendable<Event<D>>>) => void
+
+  export type SendForState<D, State> = 
+    (sendable: Sendable<AcceptableEventForState<D, State>>) => void
+
+  export type UninstantiatedSendForState<D, State> = 
+    (sendable: A.Uninstantiated<Sendable<AcceptableEventForState<D, State>>>) => void
 
   type SendImpl = (send: Sendable.Impl) => void
   export namespace Send {

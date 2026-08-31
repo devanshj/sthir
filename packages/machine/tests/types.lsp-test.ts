@@ -735,9 +735,11 @@ describe("Machine", () => {
       }
     & ( { state: "a"
         , context: { foo: number }
+        , sendT: (sendable: { type: "X", foo: number }) => void
         }
       | { state: "b"
         , context: { foo: number }
+        , sendT: (sendable: { type: "Y", bar?: number } | "Y") => void
         }
       )
   >())

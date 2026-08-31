@@ -17,7 +17,7 @@ const createMachineImpl: CreateMachineImpl = definition => {
     }
     if (event.type === "$$stop") {
       state = undefined
-      effectCleanUp?.({ event: event!, context: context!, send })
+      effectCleanUp?.({ event: event!, context: context!, send, sendT: send })
       subscribers.splice(0, subscribers.length)
       return
     }
@@ -57,12 +57,12 @@ const createMachineImpl: CreateMachineImpl = definition => {
       return
     }
     const stateNode = R.get(definition.states, state)!
-    effectCleanUp?.({ event: event!, context: context!, send })
+    effectCleanUp?.({ event: event!, context: context!, send, sendT: send })
     if (!stateNode.effect) {
       previousState = state
       return
     }
-    effectCleanUp = stateNode.effect({ event: event!, context: context!, send })
+    effectCleanUp = stateNode.effect({ event: event!, context: context!, send, sendT: send })
     previousState = state
   })
 
@@ -70,6 +70,7 @@ const createMachineImpl: CreateMachineImpl = definition => {
     get state() { return state ?? definition.initial },
     get context() { return context ?? ({} as Machine.Context.Impl) },
     send,
+    sendT: send,
     subscribe: f => {
       subscribers.push(f)
       return () => void subscribers.splice(subscribers.indexOf(f), 1)
