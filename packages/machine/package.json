@@ -1,6 +1,6 @@
 {
   "name": "@sthir/machine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A state machine",
   "main": "dist/sthir-machine.cjs.js",
   "module": "dist/sthir-machine.esm.js",
@@ -22,7 +22,7 @@
     "url": "git+https://github.com/devanshj/sthir.git"
   },
   "scripts": {
-    "test": "tsc && node ../../lsp-tester/generate.js tests/types.lsp-test.ts && vitest run",
+    "test": "rm -f tests/types.test.ts && tsc && node ../../lsp-tester/generate.js tests/types.lsp-test.ts && vitest run && rm tests/types.test.ts",
     "build": "cd ../../ && preconstruct build"
   }
 }

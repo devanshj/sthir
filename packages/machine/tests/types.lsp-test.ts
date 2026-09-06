@@ -537,14 +537,14 @@ describe("Machine.Definition", () => {
     })
   })
 
-  describe("Machine.Definition.Effect", () => {
+  describe("Machine.Definition.Invoke", () => {
     it("(placeholder)", () => {})
 
     createMachine({
       initial: "a",
       states: {
         a: {
-          effect: function (effectParameter) {
+          invoke: function (invokeParameter) {
 
           }
         }
@@ -567,43 +567,58 @@ describe("Machine.Definition", () => {
       states: {
         a: {
           on: {
-            X: "b",
+            X: "b.b1",
           }
         },
         b: {
-          on: {
-            Y: "a",
-            Z: "b",
+          initial: "b1",
+          states: {
+            b1: {
+              invoke: ({ event }) => {
+                describe("Machine.EntryEventForState", () => {
+                  A.test(A.areEqual<
+                    typeof event,
+                    | { type: "X", foo: number }
+                    | { type: "Z", baz: string }
+                  >())
+                })
+              }
+            },
+            b2: {
+            }
           },
-          effect: function (effectParameter) {
-
-            describe("Machine.EntryEventForStateValue", () => {
-              effectParameter.event?.type
-
+          on: {
+            Y: "b.b2",
+            Z: "b",
+            W: "a"
+          },
+          invoke: ({ event, context }) => {
+            describe("Machine.EntryEventForState", () => {
               A.test(A.areEqual<
-                typeof effectParameter.event,
+                typeof event,
                 | { type: "X", foo: number }
                 | { type: "Z", baz: string }
+                | { type: "Y"; bar?: number; }
               >())
             })
 
             A.test(A.areEqual<
-              typeof effectParameter.context,
+              typeof context,
               { foo: number }
             >())
 
-            return function* (cleanupParameter) {
-              describe("Machine.ExitEventForStateValue", () => {
+            return function* ({ event, context }) {
+              describe("Machine.ExitEventForState", () => {
                 A.test(A.areEqual<
-                  typeof cleanupParameter.event,
-                  | { type: "Y", bar?: number }
+                  typeof event,
+                  | { type: "W" }
                   | { type: "$$stop" }
                 >())
               })
               
 
               A.test(A.areEqual<
-                typeof cleanupParameter.context,
+                typeof context,
                 { foo: number }  
               >())
             }
@@ -612,9 +627,52 @@ describe("Machine.Definition", () => {
         c: {
           on: {},
           // @ts-expect-error
-          effect: () => { return "foo" }
+          invoke: () => { return "foo" }
         }
       }
+    })
+
+    it("Machine.EntryEventForState for heirarchical states", () => {
+      createMachine({
+        initial: "a",
+        states: {
+          a: {
+            initial: "a1",
+            states: {
+              a1: {
+                on: {
+                  X: "b.b2"
+                },
+                invoke: ({ event }) => {
+                  A.test(A.areEqual<typeof event, { type: "Y" } | { type: "$$start" }>())
+                }
+              },
+              a2: {}
+            }
+          },
+          b: {
+            initial: "b1",
+            states: {
+              b1: {
+                on: {
+                  Y: "a"
+                }
+              },
+              b2: {
+                invoke: ({ event }) => {
+                  A.test(A.areEqual<typeof event, { type: "X" }>())
+                }
+              }
+            },
+            invoke: ({ event }) => {
+              A.test(A.areEqual<typeof event, { type: "X" }>())
+            }
+          }
+        },
+        invoke: ({ event }) => {
+          A.test(A.areEqual<typeof event, { type: "X" } | { type: "Y" } | { type: "$$start" }>())
+        }
+      })
     })
   })
 
@@ -638,7 +696,6 @@ describe("Machine.Definition", () => {
         states: {
           a: {
             on: {
-              // @ts-expect-error
               X: ""
             }
           },
@@ -664,7 +721,7 @@ describe("Machine.Definition", () => {
         }
       })
 
-      expect(query().completions).toStrictEqual(["a", "b", "c"])
+      expect(query().completions).toStrictEqual(["", "a", "b", "c"])
     })
 
     it("expects transition function", () => {
@@ -688,7 +745,53 @@ describe("Machine.Definition", () => {
         }
       })
 
-      expect(query().completions).toStrictEqual(["a", "b", "c"])
+      expect(query().completions).toStrictEqual(["", "a", "b", "c"])
+    })
+
+    it("supports hierarchical target states", () => {
+      createMachine({
+        initial: "a",
+        states: {
+          a: {
+            on: {
+              X: "",
+              Y: "b.b1",
+              Z: () => ({ target: "b.b2" })
+            }
+          },
+          b: {
+            initial: "b1",
+            states: {
+              b1: {},
+              b2: {}
+            }
+          }
+        }
+      })
+    })
+
+    it("shows completions for hierarchical target states", () => {
+      createMachine({
+        initial: "a",
+        states: {
+          a: {
+            on: {
+              // @ts-expect-error
+              X: "  "
+              //   ^|
+            }
+          },
+          b: {
+            initial: "b1",
+            states: {
+              b1: {},
+              b2: {}
+            }
+          }
+        }
+      })
+
+      expect(query().completions).toStrictEqual(["", "a", "b", "b.b1", "b.b2"])
     })
   })
 })
@@ -722,27 +825,45 @@ describe("Machine", () => {
   A.test(A.areEqual<
     typeof machine,
     & { send:
-          ( sendable:
+          ( event:
             | { type: "X", foo: number }
             | { type: "Y", bar?: number }
-            | "Y"
-            | "$$start"
             | { type: "$$start" }
-            | "$$stop"
             | { type: "$$stop" }
           ) => void
       , subscribe: (f: () => void) => () => void
       }
     & ( { state: "a"
         , context: { foo: number }
-        , sendT: (sendable: { type: "X", foo: number }) => void
+        , contextR: { foo: number }
+        , sendT: (event: { type: "X", foo: number }) => void
         }
       | { state: "b"
         , context: { foo: number }
-        , sendT: (sendable: { type: "Y", bar?: number } | "Y") => void
+        , contextR: { foo: number }
+        , sendT: (event: { type: "Y", bar?: number }) => void
         }
       )
   >())
+
+  describe("Machine.State", () => {
+    it("works", () => {
+      let machine = createMachine({
+        initial: "a",
+        states: {
+          a: {},
+          b: {
+            initial: "b1",
+            states: {
+              b1: {},
+              b2: {}
+            }
+          }
+        }
+      })
+      A.test(A.areEqual<typeof machine.state, "a" | "b.b1" | "b.b2">())
+    })
+  })
 })
 
 describe("A.Instantiated", () => {
@@ -753,18 +874,6 @@ describe("A.Instantiated", () => {
     expect(query().text).toContain("Date")
   })
 
-  it("does not instantiate context", () => {
-    interface Something { foo: string }
-    let _machine = createMachine({
-    //     ^?
-      context: { foo: "" } as Something,
-      initial: "a",
-      states: { a: {} }
-    })
-    _machine;
-
-    expect(query().text).toContain("Something")
-  })
 
   it("does not instantiate event payloads deeply", () => {
     interface Something { foo: string }
@@ -784,26 +893,38 @@ describe("A.Instantiated", () => {
 
 
 test("comment machine", () => {
-  createMachine({
+  const machine = createMachine({
     initial: "editing",
     context: { body: "" },
     states: {
       editing: {
         on: {
-          UPDATE_BODY: ({ event }) => ({ context: { body: event.body, test: true } }),
+          UPDATE_BODY: ({ event, context }) => ({ context: { ...context, body: event.body, test: true } }),
           SUBMIT: ({ context }) => {
             if (!isNonEmptyString(context.body)) return
-            return { target: "posting", context: { body: context.body } }
+            return { target: "posting", context: { ...context, body: context.body } }
           }
         }
       },
       posting: {
         on: {
-          POST_SUCCESS: ({ event }) => ({ target: "posted", context: { id: event.id } }),
-          POST_ERROR: ({ event }) => ({ target: "editing", context: { body: "", id: undefined, error: event.error } })
+          POST_SUCCESS: ({ event, context }) => ({ target: "posted", context: { ...context, id: event.id } }),
+          POST_ERROR: ({ event }) => ({ target: "editing", context: { body: "", error: event.error } }) // TODO can't spread context here
         },
-        effect: ({ context, send }) => {
-          A.test(A.areEqual<typeof context, { body: NonEmptyString } | { body: NonEmptyString, test: boolean }>())
+        invoke: ({ context, contextR, send }) => {
+          A.test(A.areEqual<
+            typeof context,
+            | { body: `${string & {}}${string}` }
+            | { test: boolean, body: `${string & {}}${string}` }
+            | { test: boolean
+              , body: `${string & {}}${string}`
+              , error: string
+              }
+            | { body: `${string & {}}${string}`
+              , error: string
+              }
+          >())
+          A.test(A.areEqual<typeof contextR, { body: NonEmptyString }>())
 
           postComment({ body: context.body })
           .then(({ id }) => {
@@ -825,10 +946,374 @@ test("comment machine", () => {
     },
   })
 
+  switch (machine.state) {
+    case "editing": {
+      A.test(A.areEqual<
+        typeof machine.context,
+        | { body: string }
+        | { body: string, test: boolean }
+        | { body: string, test: boolean, error: string }
+        | { body: string, error: string }
+      >())
+      A.test(A.areEqual<typeof machine.contextR, { body: string }>())
+      break
+    }
+    case "posting": {
+      A.test(A.areEqual<
+        typeof machine.context,
+        | { body: `${string & {}}${string}` }
+        | { test: boolean, body: `${string & {}}${string}` }
+        | { test: boolean
+          , body: `${string & {}}${string}`
+          , error: string
+          }
+        | { body: `${string & {}}${string}`
+          , error: string
+          }
+      >())
+      A.test(A.areEqual<typeof machine.contextR, { body: NonEmptyString }>())
+      break
+    }
+    case "posted": {
+      A.test(A.areEqual<
+        typeof machine.context,
+        | { body: `${string & {}}${string}`, id: string }
+        | { test: boolean, body: `${string & {}}${string}`, id: string }
+        | { test: boolean
+          , body: `${string & {}}${string}`
+          , id: string
+          , error: string
+          }
+        | { body: `${string & {}}${string}`
+          , id: string
+          , error: string
+          }
+      >())
+      A.test(A.areEqual<typeof machine.contextR, { body: NonEmptyString, id: string }>())
+      break
+    }
+  }
+
   type NonEmptyString = `${string & {}}${string}`
   const isNonEmptyString = (x: string): x is NonEmptyString => x !== ""
 
   const postComment = async (comment: { body: NonEmptyString }) => {
     return { id: "whatever" }
+  }
+})
+
+test("flight booking machine", () => {
+  const machine = createMachine({
+    initial: "scheduling",
+    context: {
+      departDate: getToday(),
+      returnDate: getTomorrow(),
+    },
+    states: {
+      scheduling: {
+        initial: "oneway",
+        on: {
+          UPDATE_DEPART_DATE: ({ event, context }) => ({ context: { ...context, departDate: event.value } }),
+          UPDATE_RETURN_DATE: ({ event, context }) => ({ context: { ...context, returnDate: event.value } }),
+        },
+        states: {
+          oneway: {
+            on: {
+              TOGGLE_TRIP_TYPE: "scheduling.roundtrip",
+              BOOK: ({ context }) => {
+                if (!isDepartDate(context.departDate)) return
+                return {
+                  target: "booking",
+                  context: {
+                    ...context,
+                    tripType: "oneway" as const,
+                    departDate: context.departDate
+                  }
+                }
+              }
+            }
+          },
+          roundtrip: {
+            on: {
+              TOGGLE_TRIP_TYPE: "scheduling.oneway",
+              BOOK: ({ context }) => {
+                if (!isDepartDate(context.departDate)) return
+                if (!isReturnDate(context.departDate, context.returnDate)) return
+                return {
+                  target: "booking",
+                  context: {
+                    ...context,
+                    tripType: "roundtrip" as const,
+                    departDate: context.departDate,
+                    returnDate: context.returnDate,
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      booking: {
+        invoke: ({ context, send }) => {
+          book(context)
+          .then(({ ticketNumber }) => send({ type: "BOOK_SUCCESS", ticketNumber }))
+          .catch(() => send({ type: "BOOK_ERROR", error: "Something went wrong" }))
+        },
+        on: {
+          BOOK_SUCCESS: ({ event, context }) => ({ target: "booked", context: { ...context, ticketNumber: event.ticketNumber } }),
+          BOOK_ERROR: ({ event, context: { tripType, ...context } }) => ({ target: "scheduling", context: { ...context, error: event.error } })
+        }
+      },
+      booked: {}
+    },
+    schema: {
+      events: {
+        UPDATE_DEPART_DATE: t<{ value: Date }>(),
+        UPDATE_RETURN_DATE: t<{ value: Date }>(),
+        BOOK_SUCCESS: t<{ ticketNumber: string }>(),
+        BOOK_ERROR: t<{ error: string }>()
+      },
+      context: {
+        booking: t<(_:
+          | { tripType: "oneway", departDate: DepartDate, returnDate: Date }
+          | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate }
+        ) => void>(),
+      }
+    }
+  })
+
+  switch (machine.state) {
+    case "scheduling.oneway": {
+      A.test(A.areEqual<
+        typeof machine.context,
+        | { departDate: Date, returnDate: Date }
+        | { departDate: Date, returnDate: Date, error: string }
+        | { departDate: Date, returnDate: ReturnDate, error: string }
+        | { departDate: DepartDate, returnDate: Date, error: string }
+        | { departDate: DepartDate, returnDate: ReturnDate, error: string }
+      >())
+      A.test(A.areEqual<typeof machine.contextR, { departDate: Date, returnDate: Date }>())
+      A.test(A.areEqual<
+        typeof machine.sendT,
+        ( event:
+            | { type: "BOOK" }
+            | { type: "TOGGLE_TRIP_TYPE" }
+            | { type: "UPDATE_DEPART_DATE", value: Date }
+            | { type: "UPDATE_RETURN_DATE", value: Date }
+        ) => void
+      >())
+      break
+    }
+    case "scheduling.roundtrip": {
+      A.test(A.areEqual<
+        typeof machine.context,
+        | { departDate: Date, returnDate: Date }
+        | { departDate: Date, returnDate: Date, error: string }
+        | { departDate: Date, returnDate: ReturnDate, error: string }
+        | { departDate: DepartDate, returnDate: Date, error: string }
+        | { departDate: DepartDate, returnDate: ReturnDate, error: string }
+      >())
+      A.test(A.areEqual<typeof machine.contextR, { departDate: Date, returnDate: Date }>())
+      A.test(A.areEqual<
+        typeof machine.sendT,
+        ( event:
+            | { type: "BOOK" }
+            | { type: "TOGGLE_TRIP_TYPE" }
+            | { type: "UPDATE_DEPART_DATE", value: Date }
+            | { type: "UPDATE_RETURN_DATE", value: Date }
+        ) => void
+      >())
+      break
+    }
+    case "booking": {
+      A.test(A.areEqual<
+        typeof machine.context,
+        | { tripType: "oneway", departDate: DepartDate, returnDate: Date }
+        | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate }
+      >())
+      A.test(A.areEqual<
+        typeof machine.contextR,
+        | { tripType: "oneway", departDate: DepartDate, returnDate: Date }
+        | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate }
+      >())
+      A.test(A.areEqual<
+        typeof machine.sendT,
+        ( event:
+            | { type: "BOOK_ERROR", error: string }
+            | { type: "BOOK_SUCCESS", ticketNumber: string }
+        ) => void
+      >())
+      break
+    }
+    case "booked": {
+      A.test(A.areEqual<
+        typeof machine.context,
+        | { tripType: "oneway", departDate: DepartDate, returnDate: Date, ticketNumber: string }
+        | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate, ticketNumber: string }
+      >())
+      A.test(A.areEqual<
+        typeof machine.contextR,
+        | { tripType: "oneway", departDate: DepartDate, returnDate: Date, ticketNumber: string }
+        | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate, ticketNumber: string }
+      >())
+      A.test(A.areEqual<typeof machine.sendT, (event: never) => void>())
+      break
+    }
+  }
+
+  type DepartDate = Date & { readonly DepartDate: unique symbol }
+  type ReturnDate = Date & { readonly ReturnDate: unique symbol }
+
+  const isDepartDate = (departDate: Date): departDate is DepartDate =>
+    departDate.getTime() >= getToday().getTime()
+
+  const isReturnDate = (
+    departDate: DepartDate,
+    returnDate: Date
+  ): returnDate is ReturnDate => returnDate.getTime() > departDate.getTime()
+
+  type Booking =
+    | { tripType: "oneway", departDate: DepartDate }
+    | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate }
+
+  const book = async (booking: Booking) => {
+    return { ticketNumber: "whatever" }
+  }
+
+  function getToday(){
+    const x = new Date()
+    x.setHours(0, 0, 0, 0)
+    return x
+  }
+
+  function getTomorrow() {
+    const x = new Date()
+    x.setDate(x.getDate() + 1)
+    return x
+  }
+})
+
+test("flight booking machine with explosive LOL", () => {
+  const machine = createMachine({
+    initial: "scheduling",
+    context: {
+      departDate: getToday(),
+      returnDate: getTomorrow(),
+    },
+    states: {
+      scheduling: {
+        initial: "oneway",
+        on: {
+          UPDATE_DEPART_DATE: ({ event, context }) => ({ context: { ...context, departDate: event.value } }),
+          UPDATE_RETURN_DATE: ({ event, context }) => ({ context: { ...context, returnDate: event.value } }),
+        },
+        states: {
+          oneway: {
+            on: {
+              TOGGLE_TRIP_TYPE: "scheduling.roundtrip",
+              BOOK: ({ context }) => {
+                if (!isDepartDate(context.departDate)) return
+                return {
+                  target: "booking",
+                  context: {
+                    ...context,
+                    tripType: "oneway" as const,
+                    departDate: context.departDate
+                  }
+                }
+              }
+            }
+          },
+          roundtrip: {
+            on: {
+              TOGGLE_TRIP_TYPE: "scheduling.oneway",
+              BOOK: ({ context }) => {
+                if (!isDepartDate(context.departDate)) return
+                if (!isReturnDate(context.departDate, context.returnDate)) return
+                return {
+                  target: "booking",
+                  context: {
+                    ...context,
+                    tripType: "roundtrip" as const,
+                    departDate: context.departDate,
+                    returnDate: context.returnDate,
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      booking: {
+        invoke: ({ context, send }) => {
+          book(context)
+          .then(({ ticketNumber }) => send({ type: "BOOK_SUCCESS", ticketNumber }))
+          .catch(() => send({ type: "BOOK_ERROR", error: "something went wrong" }))
+        },
+        on: {
+          BOOK_SUCCESS: ({ event, context }) => ({ target: "booked", context: { ...context, ticketNumber: event.ticketNumber } }),
+          BOOK_ERROR: ({ event, context: { tripType, ...context } }) => ({ target: "scheduling", context: { ...context, error: event.error } })
+        }
+      },
+      booked: {}
+    },
+    on: { 
+      LOL: ({ context }) => ({ context: { ...context, lol: true } })
+    },
+    schema: {
+      events: {
+        UPDATE_DEPART_DATE: t<{ value: Date }>(),
+        UPDATE_RETURN_DATE: t<{ value: Date }>(),
+        BOOK_SUCCESS: t<{ ticketNumber: string }>(),
+        BOOK_ERROR: t<{ error: string }>()
+      },
+      context: {
+        "scheduling.oneway": t<(_:
+          { departDate: Date, returnDate: Date, lol?: boolean, error?: string }
+        ) => void>(),
+        "scheduling.roundtrip": t<(_:
+          { departDate: Date, returnDate: Date, lol?: boolean, error?: string }
+        ) => void>(),
+        booking: t<(_:
+          | { tripType: "oneway", departDate: DepartDate, returnDate: Date, lol?: boolean }
+          | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate, lol?: boolean  }
+        ) => void>(),
+        booked: t<(_:
+          | { tripType: "oneway", departDate: DepartDate, returnDate: Date, ticketNumber: string, lol?: boolean }
+          | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate, ticketNumber: string, lol?: boolean }
+        ) => void>(),
+      }
+    }
+  })
+
+  type DepartDate = Date & { readonly DepartDate: unique symbol }
+  type ReturnDate = Date & { readonly ReturnDate: unique symbol }
+
+  const isDepartDate = (departDate: Date): departDate is DepartDate =>
+    departDate.getTime() >= getToday().getTime()
+
+  const isReturnDate = (
+    departDate: DepartDate,
+    returnDate: Date
+  ): returnDate is ReturnDate => returnDate.getTime() > departDate.getTime()
+
+  type Booking =
+    | { tripType: "oneway", departDate: DepartDate }
+    | { tripType: "roundtrip", departDate: DepartDate, returnDate: ReturnDate }
+
+  const book = async (booking: Booking) => {
+    return { ticketNumber: "whatever" }
+  }
+
+  function getToday(){
+    const x = new Date()
+    x.setHours(0, 0, 0, 0)
+    return x
+  }
+
+  function getTomorrow() {
+    const x = new Date()
+    x.setDate(x.getDate() + 1)
+    return x
   }
 })

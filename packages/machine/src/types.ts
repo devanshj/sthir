@@ -20,7 +20,8 @@ export type Machine<D> =
       & ( State extends unknown
           ? A.Instantiated<
               { state: State
-              , context: A.Uninstantiated<Machine.ContextForState<D, State>>
+              , context: Machine.ContextForState<D, State>
+              , contextR: U.Reduce<Machine.ContextForState<D, State>>
               , sendT: Machine.UninstantiatedSendForState<D, State>
               }>
           : never
@@ -30,6 +31,7 @@ export type Machine<D> =
 interface MachineImpl
   { state: Machine.State.Impl
   , context: Machine.Context.Impl
+  , contextR: Machine.Context.Impl
   , send: Machine.Send.Impl
   , sendT: Machine.Send.Impl
   , subscribe: (f: () => void) => () => void
@@ -39,36 +41,45 @@ export namespace Machine {
   export type Impl = MachineImpl
 
   export type Definition<Self> =
-    // doing A.Get<Self, "states"> breaks the inference somehow hence using Self["states" & keyof Self] everywhere
-    & { initial: keyof A.Get<Self, "states">
-      , states:
-          { [StateIdentifier in keyof Self["states" & keyof Self]]:
-            StateIdentifier extends A.String
-              ? Definition.StateNode<Self, ["states", StateIdentifier]>
-              : A.CustomError<"Error: Only string identifiers allowed", A.Get<Self, ["states", StateIdentifier]>>
-          }
-      , schema?: Definition.Schema<Self, ["schema"]>
+    & Definition.StateNode<Self, []>
+    & { schema?: Definition.Schema<Self, ["schema"]>
       , context?: unknown
       }
 
-  interface DefinitionImp
-    { initial: State.Impl
-    , states: R.Of<State.Impl, Definition.StateNode.Impl>
-    , schema?: { events?: R.Of<Event.Impl["type"], null> }
-    , context?: Machine.Context.Impl
+  interface DefinitionImp extends Machine.Definition.StateNode.Impl
+    { schema?: { events?: R.Of<Event.Impl["type"], null> }
+    , context: Machine.Context.Impl
     }
 
   export namespace Definition {
     export type Impl = DefinitionImp
 
-    export interface StateNode<D, P>
-      { on?: On<D, L.Concat<P, ["on"]>>
-      , effect?: Effect<D, L.Concat<P, ["effect"]>>
-      }
+    export type StateNode<D, P, Self = A.Get<D, P>> =
+      & { on?: On<D, L.Concat<P, ["on"]>>
+        , invoke?: Invoke<D, L.Concat<P, ["invoke"]>>
+        }
+      & ( { initial?: never, states?: never }
+        | { initial: keyof A.Get<Self, ["states"]>
+          , states:
+              { [StateIdentifier in keyof A.Get<Self, ["states"]>]:
+                  StateIdentifier extends A.String
+                    ? StateNode<D, L.Concat<P, ["states", StateIdentifier]>>
+                    : A.CustomError<"Error: Only string identifiers allowed", A.Get<Self, ["states", StateIdentifier]>>
+              }
+          }
+        )
 
-    interface StateNodeImpl
+    export type StateNodeAtTarget<D, Target> =
+      A.Get<D,
+        Target extends "" ? [] :
+        S.Split<`states.${S.Assert<S.Replace<Target, ".", ".states.">>}`, ".">
+      >
+
+    type StateNodeImpl =
       { on?: On.Impl
-      , effect?: Effect.Impl
+      , invoke?: Invoke.Impl
+      , initial?: string & A.Tag<"Machine.Definition.StateNode.Impl['initial']">
+      , states?: R.Of<NonNullable<StateNodeImpl["initial"]>, StateNodeImpl>
       }
     export namespace StateNode {
       export type Impl = StateNodeImpl
@@ -78,22 +89,22 @@ export namespace Machine {
       D, P, Self = A.Get<D, P>,
       EventsSchema = A.Get<D, ["schema", "events"], {}>,
       EventTypeConstraint =
-        A.Get<EventsSchema, ExhaustiveIdentifier, false> extends true
+        A.Get<EventsSchema, [ExhaustiveIdentifier], false> extends true
           ? U.Exclude<keyof EventsSchema, ExhaustiveIdentifier>
           : A.String
     > =
       { [EventType in keyof Self]:
           A.DoesExtend<EventType, A.String> extends false
-            ? A.CustomError<"Error: only string types allowed", A.Get<Self, EventType>> :
+            ? A.CustomError<"Error: only string types allowed", A.Get<Self, [EventType]>> :
           EventType extends ExhaustiveIdentifier
             ? A.CustomError<
                 `Error: '${ExhaustiveIdentifier}' is a reserved name`,
-                A.Get<Self, EventType>
+                A.Get<Self, [EventType]>
               > :
           EventType extends StartEventType
             ? A.CustomError<
                 `Error: '${StartEventType}' is a reserved type`,
-                A.Get<Self, EventType>
+                A.Get<Self, [EventType]>
               > :
           A.DoesExtend<EventType, EventTypeConstraint> extends false
             ? A.CustomError<
@@ -101,7 +112,7 @@ export namespace Machine {
                   [ `Error: Event type '${S.Assert<EventType>}' is not found in schema.events `
                   , "which is marked as exhaustive"
                   ]>,
-                A.Get<Self, EventType>
+                A.Get<Self, [EventType]>
               > :
           Transition<D, L.Concat<P, [EventType]>>
       }
@@ -112,56 +123,84 @@ export namespace Machine {
     }
 
     export type Transition<D, P,
-      TargetString = Machine.State<D>,
-      State = L.Pop<L.Popped<L.Popped<P>>>,
+      State = StateForTarget<D, TargetFromStateNodePath<L.Popped<L.Popped<P>>>>,
       EventType = L.Pop<P>
     > =
-      | TargetString
+      | Machine.Target<D>
       | ((parameter:
             { event: A.Instantiated<U.Extract<Machine.Event<D>, { type: EventType }>>
-            , context: A.Instantiated<Machine.ContextForState<D, State>>
+            , context: A.MapNeverToAny<A.Instantiated<Machine.ContextForState<D, State>>>
+            // TODO: we want to preserve true nevers which occur when the node is a dead node
+            , contextR: A.Instantiated<U.Reduce<Machine.ContextForState<D, State>>>
             }
             /*
             For some reason following result in circularity errors
             A.Instantiated<
               { event: A.Uninstantiated<U.Extract<Machine.Event<D>, { type: EventType }>>
-              , context: A.Uninstantiated<Machine.ContextForState<D, State>>
+              , context: A.Uninstantiated<Machine.ContextForTarget<D, State>>
               }
             >
             */
           ) =>
           | undefined
-          | TargetString
-          | { target: TargetString, context?: unknown }
-          | { target?: TargetString, context: unknown }
+          | Machine.Target<D>
+          | { target: Machine.Target<D>, context?: unknown }
+          | { target?: Machine.Target<D>, context: unknown }
         )
 
     type TransitionImpl =
-        | Machine.State.Impl
+        | Machine.Target.Impl
         | (
-            (parameter: { event: Machine.Event.Impl, context: Machine.Context.Impl }) =>
+            (parameter: { event: Machine.Event.Impl, context: Machine.Context.Impl, contextR: Machine.Context.Impl }) =>
               | undefined
-              | Machine.State.Impl
-              | { target?: Machine.State.Impl, context?: Machine.Context.Impl }
+              | Machine.Target.Impl
+              | { target?: Machine.Target.Impl, context?: Machine.Context.Impl }
           )
 
     export namespace Transition {
       export type Impl = TransitionImpl
     }
 
-    export type DesugarTransition<T> =
-      T extends A.String ? () => { target: T } :
-      T extends (...a: infer A) => A.String ? (...a: A) => { target: T } :
-      T
-        
+    export type ResolveTransition<D, Transition> =
+      Transition extends (...a: never) => infer R ? ResolveTransition<D, R> :
+      Transition extends A.String ? { target: ResolveTarget<D, Transition> } :
+      Transition extends A.Object
+        ? A.Get<Transition, ["target"]> extends undefined ? Transition :
+          O.Spread<Transition, { target: ResolveTarget<D, A.Get<Transition, ["target"]>> }> :
+      never
 
-    export type Effect<D, P, State = L.Pop<L.Popped<P>>> = 
+    export type ResolveTarget<D, Target> =
+      ResolveTargetFromStateNode<
+        A.Get<
+          D,
+          Target extends ""
+            ? []
+            : S.Split<
+                `states.${S.Assert<S.Replace<Target, ".", ".states.">>}`,
+                "."
+              >
+        >,
+        Target
+      >
+
+    type ResolveTargetFromStateNode<StateNode, Target> =
+      A.Get<StateNode, ["initial"]> extends undefined
+        ? Target
+        : ResolveTargetFromStateNode<
+            A.Get<StateNode, ["states", A.Get<StateNode, ["initial"]>]>,
+            Target extends ""
+              ? A.Get<StateNode, ["initial"]>
+              : `${S.Assert<Target>}.${S.Assert<A.Get<StateNode, ["initial"]>>}`
+          >
+
+    export type Invoke<D, P, State = Machine.StateForTarget<D, Machine.TargetFromStateNodePath<L.Popped<P>>>> = 
       ( parameter:
           A.Instantiated<
-            { event: A.Uninstantiated<Machine.EntryEventForState<D, State>>
-            , context: A.Uninstantiated<Machine.ContextForState<D, State>>
-            , send: A.Uninstantiated<Machine.Send<D>>
-            , sendT: A.Uninstantiated<Machine.SendForState<D, State>>
+            { event: A.Uninstantiated<Machine.EntryEventForTarget<D, State>>
+            , context: A.MapNeverToAny<Machine.ContextForState<D, State>>
+            , contextR: U.Reduce<Machine.ContextForState<D, State>>
+            , send: Machine.UninstantiatedSend<D>
+            , sendT: Machine.UninstantiatedSendForState<D, State>
             }
           >
       ) =>
@@ -169,8 +208,9 @@ export namespace Machine {
           | (
               ( cleanupParameter:
                   A.Instantiated<
-                    { event: A.Uninstantiated<Machine.ExitEventForState<D, State>>
-                    , context: A.Uninstantiated<Machine.ContextForState<D, State>>
+                    { event: A.Uninstantiated<Machine.ExitEventForTarget<D, State>>
+                    , context: A.MapNeverToAny<Machine.ContextForState<D, State>>
+                    , contextR: U.Reduce<Machine.ContextForState<D, State>>
                     , send: A.Uninstantiated<Machine.Send<D>>
                     , sendT: A.Uninstantiated<Machine.SendForState<D, State>>
                     }
@@ -179,21 +219,35 @@ export namespace Machine {
                 void
             )
 
-    type EffectImpl =
-      (parameter: { event: Machine.Event.Impl, context: Machine.Context.Impl, send: Machine.Send.Impl, sendT: Machine.Send.Impl }) =>
+    type InvokeImpl =
+      ( parameter:
+          { event: Machine.Event.Impl
+          , context: Machine.Context.Impl
+          , contextR: Machine.Context.Impl
+          , send: Machine.Send.Impl
+          , sendT: Machine.Send.Impl
+          }
+      ) =>
         | void
         | (
-            (cleanupParameter: { event: Machine.Event.Impl, context: Machine.Context.Impl, send: Machine.Send.Impl, sendT: Machine.Send.Impl }) =>
+            ( cleanupParameter: 
+                { event: Machine.Event.Impl
+                , context: Machine.Context.Impl
+                , contextR: Machine.Context.Impl
+                , send: Machine.Send.Impl
+                , sendT: Machine.Send.Impl
+                }
+            ) =>
               void
           )
 
-    export namespace Effect {
-      export type Impl = EffectImpl  
+    export namespace Invoke {
+      export type Impl = InvokeImpl  
     }
 
 
     export type Schema<D, P, Self = A.Get<D, P>,
-      EventsSchema = A.Get<Self, "events">
+      EventsSchema = A.Get<Self, ["events"]>
     > =
       { events?:
           { [Type in keyof EventsSchema]:
@@ -202,24 +256,24 @@ export namespace Machine {
               Type extends Definition.StartEventType
                 ? A.CustomError<
                     `Error: '${Definition.StartEventType}' is a reserved type`,
-                    A.Get<EventsSchema, Type>
+                    A.Get<EventsSchema, [Type]>
                   > :
               A.DoesExtend<Type, A.String> extends false
                 ? A.CustomError<
                     "Error: Only string types allowed",
-                    A.Get<EventsSchema, Type>
+                    A.Get<EventsSchema, [Type]>
                   > :
-              A.Get<EventsSchema, Type> extends infer PayloadWrapped
+              A.Get<EventsSchema, [Type]> extends infer PayloadWrapped
                 ? A.DoesExtend<PayloadWrapped, { [$$t]: unknown }> extends false
                     ? A.CustomError<
                         "Error: Use `t` to define payload type, eg `t<{ foo: number }>()`",
-                        A.Get<EventsSchema, Type>
+                        A.Get<EventsSchema, [Type]>
                       > :
-                  A.Get<PayloadWrapped, $$t> extends infer Payload
+                  A.Get<PayloadWrapped, [$$t]> extends infer Payload
                     ? A.IsPlainObject<Payload> extends false
                         ? A.CustomError<
                             "Error: An event payload should be an object, eg `t<{ foo: number }>()`",
-                            A.Get<EventsSchema, Type>
+                            A.Get<EventsSchema, [Type]>
                           > :
                       "type" extends keyof Payload
                         ? A.CustomError<
@@ -227,11 +281,16 @@ export namespace Machine {
                               [ "Error: An event payload cannot have a property `type` as it's already defined. "
                               , `In this case as '${S.Assert<Type>}'`
                               ]>,
-                            A.Get<EventsSchema, Type>
+                            A.Get<EventsSchema, [Type]>
                           > :
-                        A.Get<EventsSchema, Type>
+                        A.Get<EventsSchema, [Type]>
                     : never
                 : never
+          }
+      , context?: 
+          { [S in Machine.State<D>]?:
+              { [$$t]: (_: Machine.InferContextForState<D, S>) => void }
+              // TODO: some basic custom errors to guide user to use t and also in a contravariant way 
           }
       }
 
@@ -241,37 +300,89 @@ export namespace Machine {
   }
 
   export type State<D> =
-    keyof A.Get<D, "states">
+    ComputeStateOrTarget<D, "", "State">
 
+  type ComputeStateOrTarget<StateNode, ParentState, Flags extends "Target" | "State"> =
+    | ("Target" extends Flags ? ParentState : never)
+    | ( [keyof A.Get<StateNode, ["states"]>] extends [never]
+          ? ParentState
+          : O.Value<{
+              [S in keyof A.Get<StateNode, ["states"]>]:
+                ComputeStateOrTarget<A.Get<StateNode, ["states", S]>, ParentState extends "" ? S : `${S.Assert<ParentState>}.${S.Assert<S>}`, Flags>
+            }>
+      )
   export type InitialState<D> =
-    A.Get<D, "initial">
+    ComputeInitialState<D, "">
 
-  type StateImpl = string & A.Tag<"Machine.State">
+  type ComputeInitialState<StateNode, ParentState> =
+    A.Get<StateNode, ["initial"]> extends undefined
+      ? ParentState
+      : ComputeInitialState<
+          A.Get<StateNode, ["states", A.Get<StateNode, ["initial"]>]>,
+          ParentState extends "" ? A.Get<StateNode, ["initial"]> : `${S.Assert<ParentState>}.${S.Assert<A.Get<StateNode, ["initial"]>>}`
+        >
+
+  export type TargetFromStateNodePath<P> =
+    P extends [] ? "" :
+    P extends ["states", ...infer X] ? S.Replace<LS.Join<X, ".">, ".states.", "."> :
+    never
+
+  export type StateForTarget<D, T> =
+    U.Extract<Machine.State<D>, `${S.Assert<T>}${string}`>
+
+  type StateImpl = Machine.Target.Impl & A.Tag<"Machine.State">
   export namespace State {
     export type Impl = StateImpl
   }
-  
-  export type ContextForState<D, State, VisitedNode = never> =
-    U.RemoveDuplicated<
-      | O.Value<{
-          [S in keyof A.Get<D, ["states"]>]: 
-            | O.Value<{
-                [E in keyof A.Get<D, ["states", S, "on"], {}>]:
-                  `${S & string}.${E & string}` extends VisitedNode ? never :
-                  Machine.Definition.DesugarTransition<A.Get<D, ["states", S, "on", E]>> extends (...a: never) => infer T
-                    ? T extends unknown
-                        ? T extends { target: State, context: infer C } ? O.Spread<A.Instantiated<Machine.ContextForState<D, S, VisitedNode | `${S & string}.${E & string}`>>, C> :
-                          T extends { target?: never, context: infer C }
-                            ? S extends State
-                                ? O.Spread<Machine.ContextForState<D, S, VisitedNode | `${S & string}.${E & string}`>, C>
-                                : never :
-                          T extends { target: State } ? Machine.ContextForState<D, S, VisitedNode | `${S & string}.${E & string}`> :
-                          never
-                        : never
-                    : never
-              }>
-        }>
-      | (A.Get<D, "initial"> extends State ? A.Get<D, "context", {}> : never)
+
+  export type Target<D> = 
+    ComputeStateOrTarget<D, "", "Target">
+
+  type TargetImpl = string & A.Tag<"Machine.Target">
+  export namespace Target {
+    export type Impl = TargetImpl
+  }
+
+  export type ContextForState<D, S> =
+    S extends unknown
+      ? ( A.Get<D, ["schema", "context", S, $$t]> extends undefined
+            ? (_: InferContextForState<D, S>) => void 
+            : A.Get<D, ["schema", "context", S, $$t]>
+        ) extends (_: infer X) => unknown
+          ? X
+          : never
+      : never
+
+  export type InferContextForState<D, S, VisitedNode = never> =
+    U.RemoveDuplicate<
+      | ( Machine.Target<D> extends infer T
+            ? T extends unknown
+              ? Machine.Definition.StateNodeAtTarget<D, T> extends infer StateNode
+                  ? keyof A.Get<StateNode, ["on"], {}> extends infer E
+                      ? E extends unknown
+                          ? `${S.Assert<T>}-${S.Assert<E>}` extends VisitedNode ? never :
+                            Machine.Definition.ResolveTransition<D, A.Get<StateNode, ["on", E]>> extends infer Transition
+                              ? Transition extends unknown
+                                  ? S extends `${S.Assert<A.Get<Transition, ["target"], Machine.Definition.ResolveTarget<D, T>>>}${string}`
+                                    // TODO: fallbacking to Machine.Definition.ResolveTarget<D, T> is not "correct" but that's the best we can do
+                                      ? A.Get<Transition, ["context"]> extends infer C
+                                          ? ( C extends undefined
+                                                ? InferContextForState<D, StateForTarget<D, T>, VisitedNode | `${S.Assert<T>}-${S.Assert<E>}`>
+                                                : C
+                                            ) extends infer C
+                                              ? A.IsAny<C> extends true ? never : C
+                                              : never
+                                          : never
+                                      : never
+                                  : never
+                              : never
+                          : never
+                      : never
+                  : never
+              : never
+            : never
+        )
+      | (Machine.InitialState<D> extends S ? A.Get<D, ["context"]> : never)
     >
 
   type ContextImpl = ({} & A.Tag<"Machine.Context">)
@@ -285,24 +396,20 @@ export namespace Machine {
           ? P extends unknown ? O.ShallowClean<{ type: T } & P> : never
           : never
       }>
-    | ( A.Get<EventsSchema, Definition.ExhaustiveIdentifier, false> extends true ? never :
-        ( ( O.Value<
-            { [S in keyof A.Get<D, "states">]:
-                keyof A.Get<D, ["states", S, "on"]>
-            }> extends infer EventType
-              ? EventType extends unknown ? { type: EventType } : never
+    | ( A.Get<EventsSchema, [Definition.ExhaustiveIdentifier], false> extends true ? never :
+        ( O.Value<
+            { [S in Machine.Target<D>]:
+                keyof A.Get<Machine.Definition.StateNodeAtTarget<D, S>, ["on"], {}>
+            }
+          > extends infer EventType
+            ? EventType extends unknown ? { type: EventType } : never
             : never
-          )
-        | ( keyof A.Get<D, "on"> extends infer EventType
-              ? EventType extends unknown ? { type: EventType } : never
-              : never
-          )
         ) extends infer InferredEvent
           ? InferredEvent extends unknown
-              ? A.Get<InferredEvent, "type"> extends keyof EventsSchema ? never :
-                A.Get<InferredEvent, "type"> extends Definition.ExhaustiveIdentifier ? never :
-                A.Get<InferredEvent, "type"> extends Definition.StartEventType ? never :
-                A.Get<InferredEvent, "type"> extends Definition.StopEventType ? never :
+              ? A.Get<InferredEvent, ["type"]> extends keyof EventsSchema ? never :
+                A.Get<InferredEvent, ["type"]> extends Definition.ExhaustiveIdentifier ? never :
+                A.Get<InferredEvent, ["type"]> extends Definition.StartEventType ? never :
+                A.Get<InferredEvent, ["type"]> extends Definition.StopEventType ? never :
                 InferredEvent
               : never
           : never
@@ -315,80 +422,81 @@ export namespace Machine {
     export type Impl = EventImpl
   }
 
-  export type EntryEventForState<D, State> =
-    | ( State extends InitialState<D>
+  export type EntryEventForTarget<D, Target> =
+    | ( InitialState<D> extends `${S.Assert<Target>}${string}`
           ? { type: Definition.StartEventType }
           : never
       )
     | U.Extract<
         Event<D>,
         { type:
-            | O.Value<{ [S in keyof A.Get<D, "states">]:
-                O.Value<{ [E in keyof A.Get<D, ["states", S, "on"]>]:
-                  Machine.Definition.DesugarTransition<A.Get<D, ["states", S, "on", E]>> extends (...a: never) => infer T
-                    ? T extends unknown
-                        ? A.Get<T, "target"> extends State
-                            ? E
-                            : never
-                        : never
-                    : never
-                }>
-              }>
+            O.Value<{
+              [T in Machine.Target<D>]:
+                Machine.Definition.StateNodeAtTarget<D, T> extends infer StateNode
+                  ? O.Value<{
+                      [E in keyof A.Get<StateNode, ["on"]>]:
+                        Machine.Definition.ResolveTransition<D, A.Get<StateNode, ["on", E]>> extends infer Transition
+                          ? Transition extends unknown
+                              ? A.Get<Transition, ["target"]> extends `${S.Assert<Target>}${string}`
+                                  ? E
+                                  : never
+                              : never
+                          : never
+                    }>
+                  : never
+            }>
         }
       >
 
-  export type ExitEventForState<D, State> =
+  export type ExitEventForTarget<D, Target> =
     | { type: Definition.StopEventType }
     | U.Extract<
       Event<D>,
       { type:
-          | O.Value<{
-              [E in keyof A.Get<D, ["states", State, "on"]>]:
-                Machine.Definition.DesugarTransition<A.Get<D, ["states", State, "on", E]>> extends (...a: never) => infer T
-                  ? T extends unknown
-                      ? A.Get<T, "target"> extends State | undefined
-                          ? never
-                          : E
+        O.Value<{
+          [T in Machine.Target<D>]:
+            Machine.Definition.StateNodeAtTarget<D, T> extends infer StateNode
+              ? O.Value<{
+                  [E in keyof A.Get<StateNode, ["on"]>]:
+                    Machine.Definition.ResolveTransition<D, A.Get<StateNode, ["on", E]>> extends infer Transition
+                      ? Transition extends unknown
+                          ? A.Get<Transition, ["target"]> extends `${S.Assert<Target>}${string}` | undefined
+                              ? never
+                              : E
+                          : never
                       : never
-                  : never
-            }>
+                }>
+              : never
+        }>
       }
     >
   
   export type AcceptableEventForState<D, State> =
     U.Extract<
       Event<D>,
-      { type: keyof A.Get<D, ["states", State, "on"]> }
+      { type:
+        O.Value<{
+          [T in Machine.Target<D>]:
+            State extends `${S.Assert<T>}${string}`
+              ? keyof A.Get<Machine.Definition.StateNodeAtTarget<D, T>, ["on"], {}>
+              : never
+        }>
+      }
     >
 
-  export type Sendable<E> =
-    | ( E extends unknown
-          ? { type: A.Get<E, "type"> } extends E
-              ? A.Get<E, "type">
-              : never
-          : never
-      )
-    | E
-  type SendableImpl = 
-    | Event.Impl["type"]
-    | Event.Impl
-  export namespace Sendable {
-    export type Impl = SendableImpl  
-  }
-
   export type Send<D> =
-    (sendable: Sendable<Event<D>>) => void
+    (event: Event<D>) => void
 
   export type UninstantiatedSend<D> =
-    (sendable: A.Uninstantiated<Sendable<Event<D>>>) => void
+    (event: A.Uninstantiated<Event<D>>) => void
 
   export type SendForState<D, State> = 
-    (sendable: Sendable<AcceptableEventForState<D, State>>) => void
+    (event: AcceptableEventForState<D, State>) => void
 
   export type UninstantiatedSendForState<D, State> = 
-    (sendable: A.Uninstantiated<Sendable<AcceptableEventForState<D, State>>>) => void
+    (event: A.Uninstantiated<AcceptableEventForState<D, State>>) => void
 
-  type SendImpl = (send: Sendable.Impl) => void
+  type SendImpl = (event: Machine.Event.Impl) => void
   export namespace Send {
     export type Impl = SendImpl
   }
@@ -406,16 +514,34 @@ export namespace LS {
     L extends [infer H] ? H :
     L extends [infer H, ...infer T] ? `${S.Assert<H>}${S.Assert<ConcatAll<T>>}` :
     never
+
+  export type Join<L, D> =
+    L extends [] ? "" :
+    L extends [infer H, ...infer T]
+      ? T extends [] ? H : `${S.Assert<H>}${S.Assert<D>}${Join<T, D>}` :
+    never;
 }
 
 export namespace S {
   export type Assert<T> = A.Cast<T, A.String>
+  
   export type IsLiteral<T> =
     T extends A.String
       ? A.String extends T
           ? false
           : true
       : false
+  
+  export type Split<S, D> =
+    S extends `${infer H}${S.Assert<D>}${infer T}` ? [H, ...Split<T, D>] : [S]
+
+  export type Replace<S, What, With> =
+    S extends `${infer P}${S.Assert<What>}${infer S}`
+      ? `${P}${S.Assert<With>}${Replace<S, What, With>}`
+      : S;
+
+  export type DoesInclude<S, X> =
+    S extends `${string}${S.Assert<X>}${string}` ? true : false
 }
 
 export namespace U {
@@ -432,14 +558,22 @@ export namespace U {
       ? U
       : never
 
-  export type RemoveDuplicated<U, UPop = U.Pop<U>> = 
+  export type Popped<U> =
+    U.Exclude<U, U.Pop<U>>
+
+  export type RemoveDuplicate<U, UPop = U.Pop<U>> = 
     [U] extends [never] ? never :
-    | RemoveDuplicated<
+    | RemoveDuplicate<
         U extends unknown 
           ? A.AreEqual<U, UPop> extends true ? never : U
           : never
       >
     | UPop
+
+  export type Reduce<U, UPop = U.Pop<U>, UPopped = U.Popped<U>> = 
+    [U] extends [never] ? never : 
+    | Reduce<UPopped>
+    | (UPop extends UPopped ? never : UPop)
     
 }
 
@@ -491,14 +625,14 @@ export namespace A {
       : false
 
   export type Get<T, P, F = undefined> =
-    P extends keyof any
-      ? Get<T, [P], F> :
-    P extends [] ?
-      T extends undefined ? F : T :
-    P extends [infer K1, ...infer Kr] ?
-      K1 extends keyof T ?
-        Get<T[K1], Kr, F> :
-      F :
+    T extends undefined
+      ? F :
+    P extends []
+      ? T extends undefined ? F : T :
+    P extends [infer K1, ...infer Kr]
+      ? K1 extends keyof T
+          ? Get<T[K1], Kr, F>
+          : F :
     never
 
   export type CustomError<Error, Place> =
@@ -508,18 +642,24 @@ export namespace A {
           : `${S.Assert<Error>} `
       : Error
 
-  export type Instantiated<T> =
+  export type Instantiated<T, Visited = never> =
+    T extends Visited ? T : 
     T extends Uninstantiated<infer U> ? U : 
     T extends Builtin ? T :
     T extends unknown
       ? T extends A.Function
           ? T extends (...a: infer A1) => infer R1
-              ? (...a1: Instantiated<A1>) => Instantiated<R1> :
+              ? (...a1: Instantiated<A1, Visited | T>) => Instantiated<R1, Visited | T> :
             never :
+        T extends Primitive
+          ? T :
         T extends A.Object
-          ? { [K in keyof T]: Instantiated<T[K]> } :
+          ? { [K in keyof T]: Instantiated<T[K], Visited | T> } :
         T
       : never
+
+  type Primitive =
+    string | number | bigint | boolean | symbol | null | undefined
 
   type Builtin =
     | { [Symbol.toStringTag]: string }
@@ -534,10 +674,12 @@ export namespace A {
   export type Tag<N extends A.String> =
     { [_ in N]: void }
 
-  export type SyncOrAsycnGenerator<T, R, N> =
-    | Generator<T, R, N>
-    | AsyncGenerator<T, R, N>
+  export type IsAny<T> =
+    0 extends (1 & T) ? true : false
 
+  export type MapNeverToAny<T> =
+    [T] extends [never] ? any : T
+    
   export const test = (_o: true) => {}
   export const areEqual = <A, B>(_debug?: (value: A) => void) => undefined as any as A.AreEqual<A, B>
 }
