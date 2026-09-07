@@ -1,6 +1,6 @@
 {
   "name": "@sthir/machine",
-  "version": "0.4.3",
+  "version": "0.4.5",
   "description": "A state machine",
   "main": "dist/sthir-machine.cjs.js",
   "module": "dist/sthir-machine.esm.js",
@@ -11,6 +11,11 @@
       "effect/index.ts"
     ]
   },
+  "files": [
+    "dist",
+    "effect/dist",
+    "effect/package.json"
+  ],
   "author": {
     "name": "Devansh Jethmalani",
     "email": "jethmalani.devansh@gmail.com"
