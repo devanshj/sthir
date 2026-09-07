@@ -39,9 +39,9 @@ test("smoke", () => {
   })
 
   class CurrentUser extends Context.Service<CurrentUser, { nickname: string }>()("User") {}
-  class BotDetected extends Data.TaggedError("BotDetected") {}
+  class ErrorBotDetected extends Data.TaggedError("ErrorBotDetected") {}
   const calculateGrade = (count: number) =>
-    count > 20 ? Effect.fail(new BotDetected()) :
+    count > 20 ? Effect.fail(new ErrorBotDetected()) :
     Effect.succeed(count > 10 ? "Amazing" : count > 5 ? "Good" : "Needs improvement")
 
   const runMachine = Effect.gen(function*() {
