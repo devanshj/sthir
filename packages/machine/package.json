@@ -22,7 +22,7 @@
     "url": "git+https://github.com/devanshj/sthir.git"
   },
   "scripts": {
-    "test": "rm -f tests/types.test.ts && tsc && node ../../lsp-tester/generate.js tests/types.lsp-test.ts && vitest run && rm tests/types.test.ts",
+    "test": "rm -f test/types.test.ts && tsc && node ../../lsp-tester/generate.js test/types.lsp-test.ts && vitest run && rm test/types.test.ts",
     "build": "cd ../../ && preconstruct build"
   }
 }

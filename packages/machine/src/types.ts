@@ -595,6 +595,7 @@ export namespace A {
     T extends any // T extends unknown doesnt work
       ? ( T extends A.Function ? T :
           T extends A.Object ? InferNarrowestObject<T> :
+          T extends A.String ? T & string :
           T
         )
       : never

@@ -20,7 +20,7 @@
     "url": "git+https://github.com/devanshj/sthir.git"
   },
   "scripts": {
-    "test": "tsc && node ../../lsp-tester/generate.js tests/types.lsp-test.ts && vitest run",
+    "test": "tsc && node ../../lsp-tester/generate.js test/types.lsp-test.ts && vitest run",
     "build": "cd ../../ && preconstruct build",
     "postbuild": "node fix-macro-dts"
   },
