@@ -1,16 +1,16 @@
 {
   "name": "@sthir/machine",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A state machine",
   "main": "dist/sthir-machine.cjs.js",
   "module": "dist/sthir-machine.esm.js",
   "sideEffects": false,
   "preconstruct": {
     "entrypoints": [
-      "index.ts"
+      "index.ts",
+      "effect/index.ts"
     ]
   },
-  "devDependencies": {},
   "author": {
     "name": "Devansh Jethmalani",
     "email": "jethmalani.devansh@gmail.com"
@@ -24,5 +24,16 @@
   "scripts": {
     "test": "rm -f test/types.test.ts && tsc && node ../../lsp-tester/generate.js test/types.lsp-test.ts && vitest run && rm test/types.test.ts",
     "build": "cd ../../ && preconstruct build"
+  },
+  "peerDependencies": {
+    "effect": "^4.0.0-rc"
+  },
+  "peerDependenciesMeta": {
+    "effect": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "effect": "^4.0.0-rc.112"
   }
 }

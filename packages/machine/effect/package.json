@@ -1,0 +1,4 @@
+{
+  "main": "dist/sthir-machine-effect.cjs.js",
+  "module": "dist/sthir-machine-effect.esm.js"
+}

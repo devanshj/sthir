@@ -216,7 +216,7 @@ describe("Machine.Definition", () => {
         })
 
         expect(query().text).toContain(
-          "Error: An event payload cannot have a property `type` as it's already defined. In this case as 'X'"
+          "Error: An event payload cannot have a property 'type' as it's already defined. In this case as 'X'"
         )
 
         createMachine({
