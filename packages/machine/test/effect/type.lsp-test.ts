@@ -5,7 +5,7 @@ const createMachine = (() => {}) as unknown as CreateMachineEffect
 const t = (() => {}) as unknown as CreateType
 
 test("smoke", () => {
-  const machine = createMachine({
+  const Machine = createMachine({
     initial: "counting",
     context: { count: 0 },
     states: {
@@ -33,7 +33,7 @@ test("smoke", () => {
     },
     schema: {
       events: {
-        SET_GRADE: t<{  grade: string }>()
+        SET_GRADE: t<{ grade: string }>()
       }
     }
   })
@@ -45,13 +45,13 @@ test("smoke", () => {
     Effect.succeed(count > 10 ? "Amazing" : count > 5 ? "Good" : "Needs improvement")
 
   const runMachine = Effect.gen(function*() {
-    yield* machine.send({ _tag: "$$start" })
-    yield* machine.send({ _tag: "INCREMENT" })
-    yield* machine.send({ _tag: "INCREMENT" })
+    const machineRef = yield* Machine
+    yield* machineRef.send({ _tag: "INCREMENT" })
+    yield* machineRef.send({ _tag: "INCREMENT" })
     yield* Effect.sleep("1 second")
-    yield* machine.send({ _tag: "INCREMENT" }); // no effect because of timeup
+    yield* machineRef.send({ _tag: "INCREMENT" });
 
-    const finalState = (yield* machine.state.pipe(
+    const finalState = (yield* machineRef.state.pipe(
       Stream.filter(state => state._tag === "graded"),
       Stream.take(1),
       Stream.runCollect
@@ -61,5 +61,4 @@ test("smoke", () => {
     yield* Console.log(`Grade: ${grade}`)
     return grade
   })
-
 })

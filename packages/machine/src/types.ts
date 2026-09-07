@@ -529,22 +529,26 @@ export type CreateMachineEffectImpl =
   (definition: MachineEffect.Definition.Impl) => MachineEffect.Impl
 
 export type MachineEffect<D, F> =
-  { state:
-      import("effect/Stream").Stream<
-        Machine.State<D, F> extends infer State
-          ? State extends unknown
-              ? A.Instantiated<
-                  { _tag: State
-                  , context: A.Uninstantiated<O.ShallowClean<Machine.ContextForState<D, F, State>>>
-                  }
-                >
-              : never
-          : never
-      , never
-      , never
-      >
-  , send: MachineEffect.Send<D, F>
-  }
+  import("effect/Effect").Effect<
+    { state:
+        import("effect/Stream").Stream<
+          Machine.State<D, F> extends infer State
+            ? State extends unknown
+                ? A.Instantiated<
+                    { _tag: State
+                    , context: A.Uninstantiated<O.ShallowClean<Machine.ContextForState<D, F, State>>>
+                    }
+                  >
+                : never
+            : never
+        , never
+        , never
+        >
+    , send: MachineEffect.Send<D, F>
+    }
+  , MachineEffect.Error<D, F>
+  , MachineEffect.Requirement<D, F>
+  >
 
 interface MachineEffectImpl
   { state: import("effect/Stream").Stream<{ _tag: MachineEffect.State.Impl, context: MachineEffect.Context.Impl }>
@@ -557,14 +561,20 @@ namespace MachineEffect {
   export namespace Definition {
     export type Impl = {} & A.Tag<"MachineEffect.Definition">
   }
+
+  export type Event<D, F> =
+    U.Exclude<
+      Machine.Event<D, F>,
+      { [_ in Machine.Definition.Discriminator<D, F>]: Machine.Definition.StartEventType | Machine.Definition.StopEventType }
+    >
   
-  type EventImpl = { _tag: (string & A.Tag<"MachineEffect.Event['_tag']">) | "$$start" | "$$stop" }
+  type EventImpl = { _tag: (string & A.Tag<"MachineEffect.Event['_tag']">) }
   export namespace Event {
     export type Impl = EventImpl
   }
 
   export type Send<D, F> =
-    (event: Machine.Event<D, F>) =>
+    (event: Event<D, F>) =>
       import("effect/Effect").Effect<void, MachineEffect.Error<D, F>, MachineEffect.Requirement<D, F>>
 
   type SendImpl =
