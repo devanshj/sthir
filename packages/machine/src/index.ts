@@ -7,7 +7,20 @@ const createMachineImpl: CreateMachineImpl = definition => {
   let context: Machine.Context.Impl = definition.context
   const subscribers: Parameters<Machine.Impl["subscribe"]>[0][] = []
 
-  const send: Machine.Impl["send"] = (newEvent) => {
+  const eventQueue: Machine.Event.Impl[] = []
+  let isProcessingEventQueue = false
+  const send: Machine.Impl["send"] = newEvent => {
+    eventQueue.push(newEvent)
+    if (isProcessingEventQueue) return
+
+    isProcessingEventQueue = true
+    while (eventQueue.length > 0) {
+      processEvent(eventQueue.shift()!)
+    }
+    isProcessingEventQueue = false
+  }
+
+  const processEvent = (newEvent: Machine.Event.Impl) => {
     event = newEvent
     if (event.type === "$$start") {
       state = definition.initial === undefined ? "" as Machine.State.Impl : resolveTarget(definition, definition.initial as string as Machine.Target.Impl)

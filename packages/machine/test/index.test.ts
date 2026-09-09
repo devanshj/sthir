@@ -188,3 +188,69 @@ it("smoke", () => {
     "exit a via $$stop",
   ]);
 });
+
+it("queues events sent by invokes until the current transition completes", () => {
+  const log: string[] = [];
+  const machine = createMachine({
+    initial: "submitted",
+    context: {},
+    states: {
+      submitted: {
+        initial: "child",
+        invoke: ({ send }) => {
+          log.push("enter submitted");
+          send({ type: "NEXT" });
+          return () => {
+            log.push("exit submitted");
+          };
+        },
+        on: {
+          NEXT: () => ({
+            target: "loggedIn",
+            context: { accessToken: "whatever" },
+          }),
+        },
+        states: {
+          child: {
+            invoke: () => {
+              log.push("enter child");
+              return () => {
+                log.push("exit child");
+              };
+            },
+          },
+        },
+      },
+      loggedIn: {
+        invoke: ({ context }) => {
+          log.push(`enter loggedIn with ${context.accessToken}`);
+          return () => {
+            log.push("exit loggedIn");
+          };
+        },
+      },
+    },
+  });
+
+  machine.send({ type: "$$start" });
+
+  expect(machine.state).toBe("loggedIn");
+  expect(machine.context).toEqual({ accessToken: "whatever" });
+  expect(log).toEqual([
+    "enter submitted",
+    "enter child",
+    "exit child",
+    "exit submitted",
+    "enter loggedIn with whatever",
+  ]);
+
+  machine.send({ type: "$$stop" });
+  expect(log).toEqual([
+    "enter submitted",
+    "enter child",
+    "exit child",
+    "exit submitted",
+    "enter loggedIn with whatever",
+    "exit loggedIn",
+  ]);
+});
