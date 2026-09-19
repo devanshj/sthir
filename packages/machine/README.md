@@ -26,8 +26,6 @@ const machine = createMachine({
         _: undefined
       },
       invoke: ({ context, send }) => {
-        A.test(A.areEqual<typeof context, { body: NonEmptyString }>())
-
         postComment({ body: context.body })
         .then(({ id }) => {
           send({ type: "POST_SUCCESS", id })
@@ -46,7 +44,7 @@ const machine = createMachine({
       POST_ERROR: t<{ error: string }>()
     },
     context: {
-      editing: t<(_: { body: string, error?: boolean }) => void>(),
+      editing: t<(_: { body: string, error?: string }) => void>(),
       posting: t<(_: { body: NonEmptyString }) => void>(),
       posted: t<(_: { body: NonEmptyString, id: string }) => void>(),
     }
