@@ -1,6 +1,6 @@
 {
   "name": "@sthir/machine",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A state machine",
   "main": "dist/sthir-machine.cjs.js",
   "module": "dist/sthir-machine.esm.js",
@@ -30,7 +30,8 @@
     "test": "yarn test:fork; yarn test:types",
     "test:types": "node test/run-type-suite.js stock",
     "test:fork": "node test/run-type-suite.js fork",
-    "build": "cd ../../ && preconstruct build"
+    "build": "cd ../../ && preconstruct build",
+    "postbuild": "node fix-is-fork-dts"
   },
   "peerDependencies": {
     "effect": "^4.0.0-rc"

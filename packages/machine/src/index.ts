@@ -174,7 +174,7 @@ const resolveTargetFromStateNode = (stateNode: Machine.Definition.StateNode.Impl
           : `${target}.${stateNode.initial}`) as Machine.Target.Impl
       )
 
-export const stateNodeAtTarget = (definition: Machine.Definition.Impl, target: Machine.Target.Impl | Machine.State.Impl) =>
+const stateNodeAtTarget = (definition: Machine.Definition.Impl, target: Machine.Target.Impl | Machine.State.Impl) =>
   get(
     definition,
     target === "" ? [] :

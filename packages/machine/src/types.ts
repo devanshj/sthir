@@ -1,4 +1,5 @@
 import { R } from "./extras"
+import { IsFork } from "./is-fork"
 
 export type CreateMachine =
   <D extends Machine.Definition<D, { isFork: IsFork }>>(definition: Machine.Definition.TypeParameter.Map<D, { isFork: IsFork }>) =>
@@ -691,9 +692,6 @@ namespace MachineEffect {
     export type Impl = RequirementImpl
   }
 }
-
-type IsFork = typeof isFork extends true ? true : false
-const isFork = ((() => {}) as unknown as <T extends (t: ReturnType<T>) => unknown>(t: T) => ReturnType<T>)(_ => true as const)
 
 export namespace L {
   export type Assert<T> = A.Cast<T, A.Tuple>
