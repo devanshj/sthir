@@ -1114,3 +1114,31 @@ test("flight booking machine", () => {
     return x
   }
 })
+
+test("check initial context", () => {
+  // @ts-expect-error
+  createMachine({
+    initial: "root",
+    states: {
+      root: {}
+    },
+    schema:{
+      context: {
+        root: t<(_: { foo: number }) => void>()
+      }
+    }
+  })
+
+  createMachine({
+    initial: "root",
+    context: { foo: 0, bar: "hello" },
+    states: {
+      root: {}
+    },
+    schema:{
+      context: {
+        root: t<(_: { foo: number }) => void>()
+      }
+    }
+  })
+})

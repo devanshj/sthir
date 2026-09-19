@@ -50,12 +50,17 @@ export namespace Machine {
       F
     >
 
-  export type Definition<Self, F> =
-    & Definition.StateNode<Self, F, []>
-    & { schema?: Definition.Schema<Self, F, ["schema"]>
-      , context?: unknown
-      , [Machine.Definition.TypeParameter.Identifier]?: Self
+  export type Definition<D, F> =
+    & Definition.StateNode<D, F, []>
+    & { schema?: Definition.Schema<D, F, ["schema"]>
+      , [Machine.Definition.TypeParameter.Identifier]?: D
       }
+    & ( A.Get<F, ["isFork"]> extends true
+          ? { context?: unknown }
+          : ContextForState<D, F, Machine.Definition.ResolveTarget<D, F, "">> extends infer C
+              ? C extends undefined ? { context?: C } : { context: C }
+              : never
+      )
 
   interface DefinitionImp extends Machine.Definition.StateNode.Impl
     { schema?: { events?: R.Of<Event.Impl["type"], null> }
