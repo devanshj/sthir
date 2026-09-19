@@ -7,8 +7,28 @@ const { parseMarkers } = require("./parse-markers")
 const { createTs7Session } = require("./session")
 const { filterCompletions } = require("./filter-completions")
 
-const testFile = path.resolve(process.cwd(), process.argv[2])
+const args = process.argv.slice(2)
+/** @param {string} name */
+const option = (name) => {
+  const index = args.indexOf(name)
+  return index === -1 ? undefined : args[index + 1]
+}
+const testFileArgument = args[0]
+if (!testFileArgument) {
+  throw new Error("Usage: generate.js <test-file> [--compiler <path>] [--out <path>]")
+}
+
+const testFile = path.resolve(process.cwd(), testFileArgument)
 const repoRoot = path.resolve(__dirname, "..")
+const compilerPath = option("--compiler")
+  ? path.resolve(process.cwd(), option("--compiler"))
+  : undefined
+const outputPath = option("--out")
+  ? path.resolve(process.cwd(), option("--out"))
+  : path.join(
+      path.dirname(testFile),
+      path.basename(testFile).replace("lsp-", "")
+    )
 
 const lspPrefix = [
   "declare const global: any",
@@ -31,10 +51,9 @@ async function generate() {
     ...q,
     line: q.line + lspPrefixLines,
   }))
-  const testDir = path.dirname(testFile)
   const lspLines = lspSource.split(EOL)
 
-  const session = await createTs7Session(repoRoot)
+  const session = await createTs7Session(repoRoot, compilerPath)
   const uri = await session.openDocument(testFile, lspSource)
 
   /** @type {{ text?: string, completions?: string[] }[]} */
@@ -72,7 +91,7 @@ async function generate() {
   const generatedSource = imports + parsedBody
 
   await fs.writeFile(
-    path.join(testDir, path.basename(testFile).replace("lsp-", "")),
+    outputPath,
     generatedSource
   )
 

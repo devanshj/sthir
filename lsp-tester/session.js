@@ -26,14 +26,16 @@ function formatHoverContents(contents) {
 
 /**
  * @param {string} repoRoot
+ * @param {string | undefined} compilerPath
  */
-async function createTs7Session(repoRoot) {
+async function createTs7Session(repoRoot, compilerPath) {
   const tsc =
-    [
-      path.resolve(repoRoot, "node_modules/@typescript/native/bin/tsc"),
-      path.resolve(repoRoot, "node_modules/.bin/tsc"),
-    ].find((p) => require("fs").existsSync(p)) ??
-    path.resolve(repoRoot, "node_modules/.bin/tsc")
+    compilerPath ??
+    ([
+        path.resolve(repoRoot, "node_modules/@typescript/native/bin/tsc"),
+        path.resolve(repoRoot, "node_modules/.bin/tsc"),
+      ].find((p) => require("fs").existsSync(p)) ??
+      path.resolve(repoRoot, "node_modules/.bin/tsc"))
   const proc = spawn(tsc, ["--lsp", "--stdio"], {
     cwd: repoRoot,
     stdio: ["pipe", "pipe", "pipe"],

@@ -1,8 +1,8 @@
 import { R } from "./extras"
 
 export type CreateMachine =
-  <D extends Machine.Definition<D, {}>>(definition: D) =>
-    Machine<D, {}>
+  <D extends Machine.Definition<D, { isFork: IsFork }>>(definition: Machine.Definition.TypeParameter.Map<D, { isFork: IsFork }>) =>
+    Machine.FromDefinition<D, { isFork: IsFork }>
 
 export type CreateMachineImpl =
   (definition: Machine.Definition.Impl) => Machine.Impl
@@ -40,10 +40,20 @@ interface MachineImpl
 export namespace Machine {
   export type Impl = MachineImpl
 
+  export type FromDefinition<D, F> =
+    Machine<
+      (
+        A.Get<F, ["isFork"]> extends true ? D :
+        D extends { [Machine.Definition.TypeParameter.Identifier]?: infer X } ? X : D
+      ),
+      F
+    >
+
   export type Definition<Self, F> =
     & Definition.StateNode<Self, F, []>
     & { schema?: Definition.Schema<Self, F, ["schema"]>
       , context?: unknown
+      , [Machine.Definition.TypeParameter.Identifier]?: Self
       }
 
   interface DefinitionImp extends Machine.Definition.StateNode.Impl
@@ -54,6 +64,13 @@ export namespace Machine {
   export namespace Definition {
     export type Impl = DefinitionImp
 
+    export namespace TypeParameter {
+      export type Map<D, F> = 
+        A.Get<F, ["isFork"], false> extends true ? D : A.IdentityObject<D> 
+
+      export const Identifier = Symbol("$$typeParameter")
+    }
+
     export type StateNode<D, F, P, Self = A.Get<D, P>> =
       & { on?: On<D, F, L.Concat<P, ["on"]>>
         , invoke?: Invoke<D, F, L.Concat<P, ["invoke"]>>
@@ -61,9 +78,19 @@ export namespace Machine {
       & ( { initial?: never, states?: never }
         | { initial: keyof A.Get<Self, ["states"]>
           , states:
+              A.IsUnknown<A.Get<Self, ["states"]>> extends true
+                ? A.CustomError<
+                    "You have met a typescript bug, add a `_` event as in `{ on: { ..., _: undefined } }`. See typescript#64251 for more.",
+                    A.Get<Self, ["states"]>
+                  > :
               { [StateIdentifier in keyof A.Get<Self, ["states"]>]:
+                  A.IsUnknown<A.Get<Self, ["states", StateIdentifier]>> extends true
+                    ? A.CustomError<
+                        "You have met a typescript bug, add a `_` event as in `{ on: { ..., _: undefined } }`. See typescript#64251 for more.",
+                        A.Get<Self, ["states", StateIdentifier]>
+                      > :
                   StateIdentifier extends A.String
-                    ? StateNode<D, F, L.Concat<P, ["states", StateIdentifier]>>
+                    ?  StateNode<D, F, L.Concat<P, ["states", StateIdentifier]>>
                     : A.CustomError<"Error: Only string identifiers allowed", A.Get<Self, ["states", StateIdentifier]>>
               }
           }
@@ -94,6 +121,7 @@ export namespace Machine {
           : A.String
     > =
       { [EventType in keyof Self]:
+          EventType extends "_" ? undefined : // TODO: allow _ for forked
           A.DoesExtend<EventType, A.String> extends false
             ? A.CustomError<"Error: only string types allowed", A.Get<Self, [EventType]>> :
           EventType extends ExhaustiveIdentifier
@@ -123,30 +151,58 @@ export namespace Machine {
     }
 
     export type Transition<D, F, P,
-      State = StateForTarget<D, F, TargetFromStateNodePath<L.Popped<L.Popped<P>>>>,
+      Target = TargetFromStateNodePath<L.Popped<L.Popped<P>>>,
+      State = StateForTarget<D, F, Target>,
       EventType = L.Pop<P>
     > =
-      | Machine.Target<D, F>
-      | ((parameter:
-            { event: A.Instantiated<U.Extract<Machine.Event<D, F>, { [_ in Definition.Discriminator<D, F>]: EventType }>>
-            , context: A.MapNeverToAny<A.Instantiated<Machine.ContextForState<D, F, State>>>
-            // TODO: we want to preserve true nevers which occur when the node is a dead node
-            , contextR: A.Instantiated<U.Reduce<Machine.ContextForState<D, F, State>>>
-            }
-            /*
-            For some reason following result in circularity errors
-            A.Instantiated<
-              { event: A.Uninstantiated<U.Extract<Machine.Event<D, F>, { [_ in Definition.Discriminator<D, F>]: EventType }>>
-              , context: A.Uninstantiated<Machine.ContextForTarget<D, F, State>>
-              }
-            >
-            */
-          ) =>
-          | undefined
-          | Machine.Target<D, F>
-          | { target: Machine.Target<D, F>, context?: unknown }
-          | { target?: Machine.Target<D, F>, context: unknown }
-        )
+      
+      A.Get<F, ["isFork"]> extends true
+        ? | Machine.Target<D, F>
+          // TODO: support { target: string }    
+          | ((parameter:
+                { event: A.Instantiated<U.Extract<Machine.Event<D, F>, { [_ in Definition.Discriminator<D, F>]: EventType }>>
+                , context: A.MapNeverToAny<A.Instantiated<Machine.ContextForState<D, F, State>>>
+                // TODO: we want to preserve true nevers which occur when the node is a dead node
+                , contextR: A.Instantiated<U.Reduce<Machine.ContextForState<D, F, State>>>
+                }
+                /*
+                For some reason following result in circularity errors
+                A.Instantiated<
+                  { event: A.Uninstantiated<U.Extract<Machine.Event<D, F>, { [_ in Definition.Discriminator<D, F>]: EventType }>>
+                  , context: A.Uninstantiated<Machine.ContextForTarget<D, F, State>>
+                  }
+                >
+                */
+              ) =>
+              | undefined
+              | Machine.Target<D, F>
+              | { target: Machine.Target<D, F>, context?: unknown }
+              | { target?: Machine.Target<D, F>, context: unknown }
+            )
+        : | (
+              Machine.Target<D, F> extends infer T
+                ? T extends unknown
+                    ? ContextForState<D, F, State> extends U.ToIntersection<[ContextForState<D, F, StateForTarget<D, F ,T>>]>[0]
+                      ? T
+                      : never
+                    : never
+                : never
+            )
+          | (
+              ( parameter:
+                  { event: A.Instantiated<U.Extract<Machine.Event<D, F>, { [_ in Definition.Discriminator<D, F>]: EventType }>>
+                  , context: A.MapNeverToAny<A.Instantiated<Machine.ContextForState<D, F, State>>>
+                  , contextR: A.Instantiated<U.Reduce<Machine.ContextForState<D, F, State>>>
+                  }
+              ) =>
+                Machine.Target<D, F> extends infer T
+                  ? T extends unknown
+                      ? | undefined
+                        | { target: T, context: U.ToIntersection<[ContextForState<D, F, StateForTarget<D, F, T>>]>[0] }
+                        | (T extends Target ? { target?: never, context: U.ToIntersection<[ContextForState<D, F, StateForTarget<D, F, T>>]>[0] } : never)
+                      : never
+                  : never
+            )
 
     type TransitionImpl =
         | Machine.Target.Impl
@@ -230,8 +286,8 @@ export namespace Machine {
           ) =>
             import("effect/Stream").Stream<
               void | O.ShallowClean<Machine.AcceptableEventForState<D, F, State>>,
-              unknown,
-              unknown
+              A.Get<F, ["isFork"]> extends true ? unknown : MachineEffect.Error<D, F>,
+              A.Get<F, ["isFork"]> extends true ? unknown : MachineEffect.Requirement<D, F>
             >
 
     type InvokeImpl =
@@ -264,50 +320,56 @@ export namespace Machine {
     export type Schema<D, F, P, Self = A.Get<D, P>,
       EventsSchema = A.Get<Self, ["events"]>
     > =
-      { events?:
-          { [Type in keyof EventsSchema]:
-              Type extends Definition.ExhaustiveIdentifier
-                ? boolean :
-              Type extends Definition.StartEventType
-                ? A.CustomError<
-                    `Error: '${Definition.StartEventType}' is a reserved type`,
-                    A.Get<EventsSchema, [Type]>
-                  > :
-              A.DoesExtend<Type, A.String> extends false
-                ? A.CustomError<
-                    "Error: Only string types allowed",
-                    A.Get<EventsSchema, [Type]>
-                  > :
-              A.Get<EventsSchema, [Type]> extends infer PayloadWrapped
-                ? A.DoesExtend<PayloadWrapped, { [$$t]: unknown }> extends false
-                    ? A.CustomError<
-                        "Error: Use `t` to define payload type, eg `t<{ foo: number }>()`",
-                        A.Get<EventsSchema, [Type]>
-                      > :
-                  A.Get<PayloadWrapped, [$$t]> extends infer Payload
-                    ? A.IsPlainObject<Payload> extends false
-                        ? A.CustomError<
-                            "Error: An event payload should be an object, eg `t<{ foo: number }>()`",
-                            A.Get<EventsSchema, [Type]>
-                          > :
-                      Definition.Discriminator<D, F> extends keyof Payload
-                        ? A.CustomError<
-                            LS.ConcatAll<
-                              [ `Error: An event payload cannot have a property '${S.Assert<Definition.Discriminator<D, F>>}' as it's already defined. `
-                              , `In this case as '${S.Assert<Type>}'`
-                              ]>,
-                            A.Get<EventsSchema, [Type]>
-                          > :
-                        A.Get<EventsSchema, [Type]>
-                    : never
-                : never
+      & { events?:
+            { [Type in keyof EventsSchema]:
+                Type extends Definition.ExhaustiveIdentifier
+                  ? boolean :
+                Type extends Definition.StartEventType
+                  ? A.CustomError<
+                      `Error: '${Definition.StartEventType}' is a reserved type`,
+                      A.Get<EventsSchema, [Type]>
+                    > :
+                A.DoesExtend<Type, A.String> extends false
+                  ? A.CustomError<
+                      "Error: Only string types allowed",
+                      A.Get<EventsSchema, [Type]>
+                    > :
+                A.Get<EventsSchema, [Type]> extends infer PayloadWrapped
+                  ? A.DoesExtend<PayloadWrapped, { [$$t]: unknown }> extends false
+                      ? A.CustomError<
+                          "Error: Use `t` to define payload type, eg `t<{ foo: number }>()`",
+                          A.Get<EventsSchema, [Type]>
+                        > :
+                    A.Get<PayloadWrapped, [$$t]> extends infer Payload
+                      ? A.IsPlainObject<Payload> extends false
+                          ? A.CustomError<
+                              "Error: An event payload should be an object, eg `t<{ foo: number }>()`",
+                              A.Get<EventsSchema, [Type]>
+                            > :
+                        Definition.Discriminator<D, F> extends keyof Payload
+                          ? A.CustomError<
+                              LS.ConcatAll<
+                                [ `Error: An event payload cannot have a property '${S.Assert<Definition.Discriminator<D, F>>}' as it's already defined. `
+                                , `In this case as '${S.Assert<Type>}'`
+                                ]>,
+                              A.Get<EventsSchema, [Type]>
+                            > :
+                          A.Get<EventsSchema, [Type]>
+                      : never
+                  : never
+            }
+        , context?: 
+            { [St in Machine.State<D, F>]?:
+                { [$$t]: (_: A.Get<F, ["isFork"]> extends true ? Machine.InferContextForState<D, F, St> : never) => void }
+                // TODO: some basic custom errors to guide user to use t and also in a contravariant way 
+            }
+        }
+      & ( A.Get<F, ["isEffect"], false> extends false ? unknown :
+          { error?: { [$$t]: (_: A.Get<F, ["isFork"]> extends true ? MachineEffect.Error<D, F> : never) => void }
+          , requirement?: { [$$t]: (_: A.Get<F, ["isFork"]> extends true ? MachineEffect.Requirement<D, F> : never) => void }
           }
-      , context?: 
-          { [St in Machine.State<D, F>]?:
-              { [$$t]: (_: Machine.InferContextForState<D, F, St>) => void }
-              // TODO: some basic custom errors to guide user to use t and also in a contravariant way 
-          }
-      }
+        )
+
 
     export type ExhaustiveIdentifier = "$$exhaustive" & unknown
     export type StartEventType = "$$start"
@@ -361,17 +423,17 @@ export namespace Machine {
     export type Impl = TargetImpl
   }
 
-  export type ContextForState<D, F, St> =
-    St extends unknown
-      ? ( A.Get<D, ["schema", "context", St, $$t]> extends undefined
-            ? (_: InferContextForState<D, F, St>) => void 
-            : A.Get<D, ["schema", "context", St, $$t]>
+  export type ContextForState<D, F, S> =
+    S extends unknown
+      ? ( A.Get<D, ["schema", "context", S, $$t]> extends undefined
+            ? (_: A.Get<F, ["isFork"]> extends true ? InferContextForState<D, F, S> : A.Get<D, ["context"]>) => void 
+            : A.Get<D, ["schema", "context", S, $$t]>
         ) extends (_: infer X) => unknown
           ? X
           : never
       : never
 
-  export type InferContextForState<D, F, St, VisitedNode = never> =
+  export type InferContextForState<D, F, S, VisitedNode = never> =
     U.RemoveDuplicate<
       | ( Machine.Target<D, F> extends infer T
             ? T extends unknown
@@ -381,7 +443,7 @@ export namespace Machine {
                           ? `${S.Assert<T>}-${S.Assert<E>}` extends VisitedNode ? never :
                             Machine.Definition.ResolveTransition<D, F, A.Get<StateNode, ["on", E]>> extends infer Transition
                               ? Transition extends unknown
-                                  ? St extends `${S.Assert<A.Get<Transition, ["target"], Machine.Definition.ResolveTarget<D, F, T>>>}${string}`
+                                  ? S extends `${S.Assert<A.Get<Transition, ["target"], Machine.Definition.ResolveTarget<D, F, T>>>}${string}`
                                     // TODO: fallbacking to Machine.Definition.ResolveTarget<D, F, T> is not "correct" but that's the best we can do
                                       ? A.Get<Transition, ["context"]> extends infer C
                                           ? ( C extends undefined
@@ -400,7 +462,7 @@ export namespace Machine {
               : never
             : never
         )
-      | (Machine.InitialState<D, F> extends St ? A.Get<D, ["context"]> : never)
+      | (Machine.InitialState<D, F> extends S ? A.Get<D, ["context"]> : never)
     >
 
   type ContextImpl = ({} & A.Tag<"Machine.Context">)
@@ -417,7 +479,7 @@ export namespace Machine {
     | ( A.Get<EventsSchema, [Definition.ExhaustiveIdentifier], false> extends true ? never :
         ( O.Value<
             { [St in Machine.Target<D, F>]:
-                keyof A.Get<Machine.Definition.StateNodeAtTarget<D, F, St>, ["on"], {}>
+                U.Exclude<keyof A.Get<Machine.Definition.StateNodeAtTarget<D, F, St>, ["on"], {}>, "_"> // TODO: support _ in fork
             }
           > extends infer EventType
             ? EventType extends unknown ? { [_ in Definition.Discriminator<D, F>]: EventType } : never
@@ -441,6 +503,7 @@ export namespace Machine {
   }
 
   export type EntryEventForTarget<D, F, Target> =
+    A.Get<F, ["isFork"]> extends false ? Event<D, F> :
     | ( InitialState<D, F> extends `${S.Assert<Target>}${string}`
           ? { [_ in Definition.Discriminator<D, F>]: Definition.StartEventType }
           : never
@@ -467,6 +530,7 @@ export namespace Machine {
       >
 
   export type ExitEventForTarget<D, F, Target> =
+    A.Get<F, ["isFork"]> extends false ? Event<D, F> :
     | { [_ in Definition.Discriminator<D, F>]: Definition.StopEventType }
     | U.Extract<
       Event<D, F>,
@@ -490,6 +554,7 @@ export namespace Machine {
     >
   
   export type AcceptableEventForState<D, F, State> =
+    A.Get<F, ["isFork"]> extends false ? Event<D, F> :
     U.Extract<
       Event<D, F>,
       { [_ in Definition.Discriminator<D, F>]:
@@ -522,8 +587,8 @@ export namespace Machine {
 
 
 export type CreateMachineEffect =
-  <D extends Machine.Definition<D, { isEffect: true }>>(definition: D) =>
-    MachineEffect<D, { isEffect: true }>
+  <D extends Machine.Definition<D, { isEffect: true, isFork: IsFork }>>(definition: Machine.Definition.TypeParameter.Map<D, { isEffect: true, isFork: IsFork }>) =>
+    MachineEffect.FromDefinition<D, { isEffect: true, isFork: IsFork }>
 
 export type CreateMachineEffectImpl =
   (definition: MachineEffect.Definition.Impl) => MachineEffect.Impl
@@ -557,6 +622,15 @@ interface MachineEffectImpl
 
 namespace MachineEffect {
   export type Impl = MachineEffectImpl
+
+  export type FromDefinition<D, F> =
+    MachineEffect<
+      (
+        A.Get<F, ["isFork"]> extends true ? D :
+        D extends { [Machine.Definition.TypeParameter.Identifier]?: infer X } ? X : D
+      ),
+      F
+    >
   
   export namespace Definition {
     export type Impl = {} & A.Tag<"MachineEffect.Definition">
@@ -585,11 +659,16 @@ namespace MachineEffect {
   }
 
   export type Error<D, F> =
-    EfforFromStateNode<D>
+    A.Get<F, ["isFork"]> extends true ? ErrorFromStateNode<D> :
+    ( A.Get<D, ["schema", "error", $$t], (_: never) => void> extends (x: infer X) => void
+        ? X
+        : never
+    )
+    
 
-  type EfforFromStateNode<StateNode> =
+  type ErrorFromStateNode<StateNode> =
     | (A.Get<StateNode, ["invoke"]> extends (...a: never) => import("effect/Stream").Stream<unknown, infer E, unknown> ? E : never)
-    | O.Value<{ [S in keyof A.Get<StateNode, ["states"], {}>]: EfforFromStateNode<A.Get<StateNode, ["states", S]>> }>
+    | O.Value<{ [S in keyof A.Get<StateNode, ["states"], {}>]: ErrorFromStateNode<A.Get<StateNode, ["states", S]>> }>
 
   type ErrorImpl = {} & A.Tag<"MachineEffect.Error">
   export namespace Error {
@@ -597,7 +676,11 @@ namespace MachineEffect {
   }
 
   export type Requirement<D, F> =
-    RequirementFromStateNode<D>
+    A.Get<F, ["isFork"]> extends true ? RequirementFromStateNode<D> :
+    ( A.Get<D, ["schema", "requirement", $$t], (_: never) => void> extends (x: infer X) => void
+        ? X
+        : never
+    )
 
   type RequirementFromStateNode<StateNode> =
     | (A.Get<StateNode, ["invoke"]> extends (...a: never) => import("effect/Stream").Stream<unknown, unknown, infer R> ? R : never)
@@ -608,6 +691,9 @@ namespace MachineEffect {
     export type Impl = RequirementImpl
   }
 }
+
+type IsFork = typeof isFork extends true ? true : false
+const isFork = ((() => {}) as unknown as <T extends (t: ReturnType<T>) => unknown>(t: T) => ReturnType<T>)(_ => true as const)
 
 export namespace L {
   export type Assert<T> = A.Cast<T, A.Tuple>
@@ -698,17 +784,17 @@ export namespace A {
   export type String = string
   export type Function = (...args: never) => unknown
 
-  export type InferNarrowest<T> =
+  export type Identity<T> =
     T extends any // T extends unknown doesnt work
       ? ( T extends A.Function ? T :
-          T extends A.Object ? InferNarrowestObject<T> :
+          T extends A.Object ? IdentityObject<T> :
           T extends A.String ? T & string :
           T
         )
       : never
   
-  export type InferNarrowestObject<T> =
-    { readonly [K in keyof T]: InferNarrowest<T[K]> }
+  export type IdentityObject<T> =
+    { readonly [K in keyof T]: Identity<T[K]> }
 
   export type AreEqual<A, B> =
     (<T>() => T extends B ? 1 : 0) extends (<T>() => T extends A ? 1 : 0)

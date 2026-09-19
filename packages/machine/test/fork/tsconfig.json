@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.types.fork.json",
+  "include": [
+    "types.lsp-test.ts",
+    "effect/**/*.lsp-test.ts",
+    "../../../../lsp-tester/**/*.d.ts"
+  ]
+}

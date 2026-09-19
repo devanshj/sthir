@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "src/**/*",
+    "index.ts",
+    "effect/**/*",
+    "test/effect/**/*.lsp-test.ts",
+    "test/types.lsp-test.ts",
+    "../../lsp-tester/**/*.d.ts"
+  ],
+  "exclude": ["test/types.test.ts", "test/types.fork.test.ts"]
+}

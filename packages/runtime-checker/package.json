@@ -20,7 +20,7 @@
     "url": "git+https://github.com/devanshj/sthir.git"
   },
   "scripts": {
-    "test": "tsc && vitest run",
+    "test": "node ../../node_modules/@typescript/native/bin/tsc && vitest run",
     "build": "cd ../../ && preconstruct build"
   }
 }

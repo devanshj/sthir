@@ -1,6 +1,6 @@
 # lsp-tester
 
-Codegen tool for TypeScript IntelliSense tests using **TypeScript 7's native language server** (`tsc --lsp --stdio`).
+Codegen tool for TypeScript IntelliSense tests using TypeScript 7's native LSP server.
 
 ## Usage
 
@@ -9,6 +9,14 @@ node lsp-tester/generate.js path/to/types.lsp-test.ts
 ```
 
 Writes `types.test.ts` next to the source file (strips `lsp-` from the basename). Each `query().completions` / `query().text` reference in the source is replaced with the LSP result inline, so tests don't depend on execution order.
+
+To select a compiler and avoid output collisions in a compiler matrix:
+
+```sh
+node lsp-tester/generate.js path/to/types.lsp-test.ts \
+  --compiler path/to/compiler \
+  --out path/to/types.test.ts
+```
 
 ## Markers
 
@@ -21,11 +29,11 @@ Completion results are filtered by the string-literal prefix at each `^|` marker
 
 ## Requirements
 
-- TypeScript 7 (`typescript` provides `tsc --lsp --stdio`)
+- TypeScript 7 or another compiler with native LSP support
 - Test file imports must resolve from disk (the generator opens the real `*.lsp-test.ts` path via LSP, not a temp copy)
 
 The generator prepends `declare const global/expect/test` shims (same as twoslash) so Vitest globals don't pollute completions.
 
 ## TypeScript versions
 
-- **LSP queries** use TypeScript 7 via the root `typescript` dependency
+- Stock queries use TypeScript 7; fork queries use `@sthir/typescript`

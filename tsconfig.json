@@ -11,5 +11,8 @@
     "noEmit": true,
     "types": ["vitest/globals", "node"]
   },
-  "include": ["packages/**/*", "lsp-tester/**/*.d.ts"]
+  "include": ["packages/**/*", "lsp-tester/**/*.d.ts"],
+  "exclude": [
+    "packages/machine/test/**/*"
+  ]
 }

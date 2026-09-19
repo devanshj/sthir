@@ -1,4 +1,4 @@
-import { CreateMachineEffect, CreateType } from "../../src/types";
+import { A, CreateMachineEffect, CreateType } from "../../../src/types";
 import { Effect, Schedule, Stream, Console, Context, Data } from "effect";
 
 const createMachine = (() => {}) as unknown as CreateMachineEffect
